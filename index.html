@@ -541,7 +541,14 @@ function stopTimer(){
 // ── Navigation ─────────────────────────────────────────────────
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const screen=document.getElementById(id);
+  // one rest-timer bar, shared: put it under the top bar of whichever workout screen is shown
+  if(id==='screen-workout'||id==='screen-free'){
+    const bar=document.getElementById('rest-bar');
+    const top=screen.querySelector('.topbar');
+    if(bar.parentNode!==screen || bar.previousElementSibling!==top) top.after(bar);
+  }
+  screen.classList.add('active');
   document.getElementById(id).scrollTop=0;
 }
 function goHome(){ stopAllCountdowns(); saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
