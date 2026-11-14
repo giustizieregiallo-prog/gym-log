@@ -108,7 +108,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes row-flash{0%{background:var(--accent-bg)}100%{background:transparent}}
 .set-done-flash{animation:row-flash 1.2s ease}
 
-.ex-foot{padding:8px 12px}
+.ex-foot{padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.remove-set-btn{font-size:13px;color:var(--text2);background:none;border:none;cursor:pointer;font-weight:500}
+.remove-set-btn:disabled{opacity:.35;cursor:default}
 .add-set-btn{font-size:13px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:500}
 .last-hint{font-size:11px;color:var(--text3);padding:5px 12px 6px;border-top:1px solid var(--border);font-style:italic}
 .save-workout-btn{display:block;margin:14px 12px 0;padding:15px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;font-size:16px;font-weight:600;cursor:pointer;width:calc(100% - 24px)}
@@ -513,7 +515,10 @@ function renderWorkoutBody(){
         <tbody id="tb-${ei}">${rows}</tbody>
       </table>
       ${hint}
-      <div class="ex-foot"><button class="add-set-btn" onclick="addSet(${ei})">+ Add set</button></div>
+      <div class="ex-foot">
+        <button class="add-set-btn" onclick="addSet(${ei})">+ Add set</button>
+        <button class="remove-set-btn" id="rm-${ei}" onclick="removeSet(${ei})" ${ex.sets<=1?'disabled':''}>− Remove set</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -549,6 +554,25 @@ function addSet(ei){
   const lastEx=last?last.exercises.find(e=>e.name===ex.name):null;
   const tb=document.getElementById(`tb-${ei}`);
   if(tb) tb.insertAdjacentHTML('beforeend', setRowHTML(ex,ei,si,lastEx));
+  const rm=document.getElementById(`rm-${ei}`);
+  if(rm) rm.disabled=false;
+}
+
+// Remove this exercise's last set row only; other rows keep their values.
+function removeSet(ei){
+  const ex=activeDay.exercises[ei];
+  if(ex.sets<=1) return;
+  const si=ex.sets-1;
+  const w=document.getElementById(`w${ei}-${si}`);
+  const r=document.getElementById(`r${ei}-${si}`);
+  const b=document.getElementById(`db${ei}-${si}`);
+  const hasData=(w&&w.value!=='')||(r&&r.value!=='')||(b&&b.classList.contains('on'));
+  if(hasData && !confirm(`Set ${si+1} of ${ex.name} has values. Remove it anyway?`)) return;
+  document.getElementById(`row-${ei}-${si}`)?.remove();
+  ex.sets--;
+  save();
+  const rm=document.getElementById(`rm-${ei}`);
+  if(rm) rm.disabled=ex.sets<=1;
 }
 
 // ── Input state (kg / reps / done), keyed by exercise name ─────
