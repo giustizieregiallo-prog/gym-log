@@ -201,6 +201,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dur-wrap{display:flex;align-items:center;gap:2px}
 .dur-unit{font-size:11px;color:var(--text3)}
 
+/* language switch */
+.topbar h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lang-btn{flex-shrink:0;display:flex;align-items:center;gap:4px;background:none;border:1px solid var(--border2);border-radius:14px;color:var(--text2);font-size:11px;font-weight:600;padding:3px 8px;cursor:pointer;white-space:nowrap;letter-spacing:.03em}
+.lang-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none}
+
 /* stretching */
 .stretch-badge{display:inline-block;font-size:10px;font-weight:600;color:#6d5bd0;background:rgba(109,91,208,.12);border-radius:10px;padding:1px 7px;margin-left:6px;vertical-align:2px;letter-spacing:.02em}
 @media(prefers-color-scheme:dark){.stretch-badge{color:#b3a6f5;background:rgba(179,166,245,.14)}}
@@ -244,66 +249,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- PROFILE SELECTOR -->
 <div class="screen" id="screen-profile">
-  <div class="topbar"><h1>Choose profile</h1></div>
+  <div class="topbar"><h1 data-i18n>Choose profile</h1><button class="lang-btn" onclick="toggleLang()" aria-label="Language"></button></div>
   <div class="profile-pad">
     <div class="key-card" id="key-card">
-      <div class="bw-card-title">Backup key</div>
-      <input class="name-input" id="key-input" type="password" autocomplete="off" placeholder="Paste backup key (github_pat_…)">
-      <button class="bw-save-btn" onclick="saveKey()">Save key</button>
+      <div class="bw-card-title" data-i18n>Backup key</div>
+      <input class="name-input" id="key-input" type="password" autocomplete="off" data-i18n-ph placeholder="Paste backup key (github_pat_…)">
+      <button class="bw-save-btn" onclick="saveKey()" data-i18n>Save key</button>
     </div>
     <div class="key-card" id="key-saved" style="display:none">
-      <span class="profile-status">Backup key saved on this device. </span>
-      <button class="key-link" onclick="changeKey()">Change key</button>
+      <span class="profile-status" data-i18n>Backup key saved on this device.</span>
+      <button class="key-link" onclick="changeKey()" data-i18n>Change key</button>
     </div>
-    <div class="section-label">Profiles</div>
+    <div class="section-label" data-i18n>Profiles</div>
     <div class="profile-status" id="profile-status"></div>
     <div id="profile-list"></div>
-    <div class="section-label" style="margin-top:18px">New profile</div>
-    <p class="profile-note">If you have existing data on this device, create a new profile to upload it.</p>
-    <input class="name-input" id="new-profile-name" type="text" maxlength="40" placeholder="Your name">
-    <label class="pin-label" for="new-profile-pin">PIN — optional, leave blank for no protection</label>
+    <div class="section-label" style="margin-top:18px" data-i18n>New profile</div>
+    <p class="profile-note" data-i18n>If you have existing data on this device, create a new profile to upload it.</p>
+    <input class="name-input" id="new-profile-name" type="text" maxlength="40" data-i18n-ph placeholder="Your name">
+    <label class="pin-label" for="new-profile-pin" data-i18n>PIN — optional, leave blank for no protection</label>
     <input class="name-input pin-input" id="new-profile-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
-    <button class="save-day-btn" onclick="createProfile()">Create new profile</button>
+    <button class="save-day-btn" onclick="createProfile()" data-i18n>Create new profile</button>
   </div>
 </div>
 
 <!-- PIN ENTRY -->
 <div class="screen" id="screen-pin">
   <div class="topbar">
-    <button class="back-btn" onclick="cancelPin()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Profiles</button>
-    <h1>Enter PIN</h1>
+    <button class="back-btn" onclick="cancelPin()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg><span data-i18n>Profiles</span></button>
+    <h1 data-i18n>Enter PIN</h1>
   </div>
   <div class="profile-pad pin-pad">
-    <div class="pin-for">PIN for <strong id="pin-profile"></strong></div>
+    <div class="pin-for"><span data-i18n>PIN for</span> <strong id="pin-profile"></strong></div>
     <input class="name-input pin-input pin-big" id="pin-entry" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••"
       oninput="if(this.value.length===4) submitPin()" onkeydown="if(event.key==='Enter') submitPin()">
     <div class="pin-error" id="pin-error"></div>
-    <button class="save-day-btn" onclick="submitPin()">Unlock</button>
+    <button class="save-day-btn" onclick="submitPin()" data-i18n>Unlock</button>
   </div>
 </div>
 
 <!-- HOME -->
 <div class="screen active" id="screen-home">
-  <div class="topbar"><h1 id="home-title">My training</h1><button class="switch-profile-btn" onclick="openPinModal()">PIN</button><button class="switch-profile-btn" onclick="switchProfile()">Switch profile</button></div>
+  <div class="topbar"><h1 id="home-title" data-i18n>My training</h1><button class="lang-btn" onclick="toggleLang()" aria-label="Language"></button><button class="switch-profile-btn" onclick="openPinModal()">PIN</button><button class="switch-profile-btn" onclick="switchProfile()" data-i18n>Switch profile</button></div>
   <div class="home-pad">
     <div class="bw-card">
-      <div class="bw-card-title">Body weight</div>
+      <div class="bw-card-title" data-i18n>Body weight</div>
       <div class="bw-row">
         <input class="bw-input" type="number" id="bw-today" min="30" max="250" step="0.1" placeholder="—">
         <span class="bw-unit">kg</span>
-        <button class="bw-save-btn" onclick="saveBW()">Save</button>
+        <button class="bw-save-btn" onclick="saveBW()" data-i18n>Save</button>
       </div>
       <div class="bw-last" id="bw-last-label"></div>
     </div>
-    <div class="section-label">Training days <button onclick="startNewDay()">+ New day</button></div>
+    <div class="section-label"><span data-i18n>Training days</span> <button onclick="startNewDay()" data-i18n>+ New day</button></div>
     <div id="home-days"></div>
     <button class="free-btn" onclick="goFree()">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Free training
+      <span data-i18n>Free training</span>
     </button>
     <button class="stats-btn" onclick="goStats()">
       <svg viewBox="0 0 24 24"><path d="M3 20h18M8 16V10m4 6V4m4 12v-6"/></svg>
-      View stats &amp; progress
+      <span data-i18n>View stats &amp; progress</span>
     </button>
   </div>
 </div>
@@ -328,32 +333,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="rest-clock" id="rest-clock">0:00</div>
       <div class="rest-label" id="rest-label">Rest</div>
     </div>
-    <button class="rest-stop-btn" onclick="skipRest()">Skip</button>
+    <button class="rest-stop-btn" onclick="skipRest()" data-i18n>Skip</button>
   </div>
 
   <div class="workout-pad" id="workout-body"></div>
-  <button class="save-workout-btn" onclick="saveWorkout()">Save workout</button>
+  <button class="save-workout-btn" onclick="saveWorkout()" data-i18n>Save workout</button>
 </div>
 
 <!-- FREE TRAINING -->
 <div class="screen" id="screen-free">
   <div class="topbar">
     <button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Home</button>
-    <h1>Free training</h1>
+    <h1 data-i18n>Free training</h1>
   </div>
   <div class="workout-pad">
     <div id="free-body"></div>
-    <div class="empty" id="free-empty">No exercises yet — add the first one.</div>
-    <button class="free-add-btn" onclick="openExPicker('free')">+ Add exercise</button>
+    <div class="empty" id="free-empty" data-i18n>No exercises yet — add the first one.</div>
+    <button class="free-add-btn" onclick="openExPicker('free')" data-i18n>+ Add exercise</button>
   </div>
-  <button class="save-workout-btn" onclick="saveFreeWorkout()">Save workout</button>
+  <button class="save-workout-btn" onclick="saveFreeWorkout()" data-i18n>Save workout</button>
 </div>
 
 <!-- STATS -->
 <div class="screen" id="screen-stats">
   <div class="topbar">
     <button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Home</button>
-    <h1>Stats</h1>
+    <h1 data-i18n>Stats</h1>
   </div>
   <div class="stats-pad" id="stats-body"></div>
 </div>
@@ -365,42 +370,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <h1 id="edit-title">Edit day</h1>
   </div>
   <div class="edit-pad">
-    <input class="name-input" id="edit-day-name" placeholder="Day name, e.g. Lower body">
+    <input class="name-input" id="edit-day-name" data-i18n-ph placeholder="Day name, e.g. Lower body">
     <div id="edit-ex-list"></div>
-    <button class="add-ex-btn" onclick="openExPicker()">+ Add exercise from database</button>
-    <button class="save-day-btn" onclick="saveEditDay()">Save day</button>
-    <button class="del-day-btn" id="del-day-btn" onclick="deleteCurDay()">Delete this day</button>
+    <button class="add-ex-btn" onclick="openExPicker()" data-i18n>+ Add exercise from database</button>
+    <button class="save-day-btn" onclick="saveEditDay()" data-i18n>Save day</button>
+    <button class="del-day-btn" id="del-day-btn" onclick="deleteCurDay()" data-i18n>Delete this day</button>
   </div>
 </div>
 
 <!-- EXERCISE PICKER MODAL -->
 <div class="overlay" id="overlay-ex">
   <div class="modal">
-    <div class="modal-head"><h2>Add exercise</h2><button class="modal-close" onclick="closeExPicker()">×</button></div>
-    <input class="modal-search" id="ex-search" placeholder="Search by name or muscle…" oninput="filterExList()">
+    <div class="modal-head"><h2 data-i18n>Add exercise</h2><button class="modal-close" onclick="closeExPicker()">×</button></div>
+    <input class="modal-search" id="ex-search" data-i18n-ph placeholder="Search by name or muscle…" oninput="filterExList()">
     <div class="modal-list" id="ex-modal-list"></div>
     <div class="modal-custom">
-      <div class="mlbl">Or add a custom exercise</div>
-      <input id="custom-ex-name" placeholder="Exercise name">
-      <input id="custom-ex-muscle" placeholder="Muscle group">
+      <div class="mlbl" data-i18n>Or add a custom exercise</div>
+      <input id="custom-ex-name" data-i18n-ph placeholder="Exercise name">
+      <input id="custom-ex-muscle" data-i18n-ph placeholder="Muscle group">
       <div class="custom-tags">
         <div class="seg" id="custom-ex-type" data-type="reps" role="group" aria-label="Exercise type">
-          <button class="on" onclick="setCustomType('reps')">Reps</button>
-          <button onclick="setCustomType('time')">Time</button>
+          <button class="on" onclick="setCustomType('reps')" data-i18n>Reps</button>
+          <button onclick="setCustomType('time')" data-i18n>Time</button>
         </div>
-        <label class="stretch-check"><input type="checkbox" id="custom-ex-stretch" onchange="onCustomStretch(this)"> Stretch</label>
+        <label class="stretch-check"><input type="checkbox" id="custom-ex-stretch" onchange="onCustomStretch(this)"> <span data-i18n>Stretch</span></label>
       </div>
       <div class="modal-custom-row">
-        <input id="custom-ex-sets"  type="number" placeholder="Sets" min="1" max="10">
-        <input id="custom-ex-reps"  type="number" placeholder="Target reps" min="1" max="60">
+        <input id="custom-ex-sets"  type="number" data-i18n-ph placeholder="Sets" min="1" max="10">
+        <input id="custom-ex-reps"  type="number" data-i18n-ph placeholder="Target reps" min="1" max="60">
         <div class="dur-field" id="custom-dur-wrap" style="display:none">
-          <input id="custom-ex-dur" type="number" min="0" step="5" data-unit="sec" placeholder="Time">
+          <input id="custom-ex-dur" type="number" min="0" step="5" data-unit="sec" data-i18n-ph placeholder="Time">
           <button type="button" class="dur-unit-btn" onclick="toggleDurUnit('custom-ex-dur')">sec</button>
         </div>
-        <input id="custom-ex-rest"  type="number" placeholder="Rest (s)" min="10" max="600">
+        <input id="custom-ex-rest"  type="number" data-i18n-ph placeholder="Rest (s)" min="10" max="600">
       </div>
-      <input id="custom-ex-link" placeholder="YouTube link (optional)">
-      <button class="btn-add-custom" onclick="addCustomEx()">Add custom exercise</button>
+      <input id="custom-ex-link" data-i18n-ph placeholder="YouTube link (optional)">
+      <button class="btn-add-custom" onclick="addCustomEx()" data-i18n>Add custom exercise</button>
     </div>
   </div>
 </div>
@@ -411,16 +416,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="modal-head"><h2 id="pin-modal-title">Set a PIN</h2><button class="modal-close" onclick="closePinModal()">×</button></div>
     <div class="modal-custom pin-modal-body">
       <div id="pin-current-wrap">
-        <label class="pin-label" for="pin-current">Current PIN</label>
+        <label class="pin-label" for="pin-current" data-i18n>Current PIN</label>
         <input class="pin-input" id="pin-current" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
       </div>
-      <label class="pin-label" for="pin-new">New PIN (4 digits)</label>
+      <label class="pin-label" for="pin-new" data-i18n>New PIN (4 digits)</label>
       <input class="pin-input" id="pin-new" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
-      <label class="pin-label" for="pin-confirm">Confirm new PIN</label>
+      <label class="pin-label" for="pin-confirm" data-i18n>Confirm new PIN</label>
       <input class="pin-input" id="pin-confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
       <div class="pin-error" id="pin-modal-error"></div>
       <button class="btn-add-custom" id="pin-save-btn" onclick="savePinFromModal()">Set PIN</button>
-      <button class="del-day-btn" id="pin-remove-btn" style="margin-top:8px" onclick="removePinFromModal()">Remove PIN</button>
+      <button class="del-day-btn" id="pin-remove-btn" style="margin-top:8px" onclick="removePinFromModal()" data-i18n>Remove PIN</button>
     </div>
   </div>
 </div>
@@ -428,6 +433,150 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="toast" id="toast"></div>
 
 <script>
+// ── Language (English / Italian) ───────────────────────────────
+// English text is the key; IT holds the Italian. Choice kept per device in localStorage (gl5_lang);
+// first open follows the phone's language. Saved data (exercise names in sessions) stays English,
+// so stats and "Last time" match whatever language is shown.
+const LANG_KEY='gl5_lang';
+let LANG=(()=>{ try { const s=localStorage.getItem(LANG_KEY); if(s==='it'||s==='en') return s; } catch(e) {}
+  return /^it\b/i.test(navigator.language||'')?'it':'en'; })();
+
+const IT={
+  // profile / PIN / backup
+  'Choose profile':'Scegli profilo','Backup key':'Chiave di backup','Paste backup key (github_pat_…)':'Incolla la chiave di backup (github_pat_…)',
+  'Save key':'Salva chiave','Backup key saved on this device.':'Chiave di backup salvata su questo dispositivo.','Change key':'Cambia chiave',
+  'Profiles':'Profili','New profile':'Nuovo profilo',
+  'If you have existing data on this device, create a new profile to upload it.':'Se hai già dei dati su questo dispositivo, crea un nuovo profilo per caricarli.',
+  'Your name':'Il tuo nome','PIN — optional, leave blank for no protection':'PIN — facoltativo, lascia vuoto per nessuna protezione',
+  'Create new profile':'Crea nuovo profilo','Enter PIN':'Inserisci PIN','PIN for':'PIN per','Unlock':'Sblocca',
+  'Add the backup key above to see saved profiles.':'Aggiungi la chiave di backup qui sopra per vedere i profili salvati.',
+  'Loading…':'Caricamento…','No profiles yet — create one below.':'Ancora nessun profilo — creane uno qui sotto.',
+  'The backup key was not accepted. Check it and save it again.':'La chiave di backup non è stata accettata. Controllala e salvala di nuovo.',
+  'Offline — could not load profiles.':'Offline — impossibile caricare i profili.',
+  'Could not reach GitHub ({err}). Try again in a moment.':'Impossibile raggiungere GitHub ({err}). Riprova tra poco.',
+  'Paste the backup key first':'Incolla prima la chiave di backup','Loading {name}…':'Caricamento di {name}…',
+  'This device has {n} workout(s) that are not in any profile yet.\n\nLoading "{name}" will replace them. To keep them, press Cancel and create a new profile instead.':
+    'Questo dispositivo ha {n} allenamento/i che non sono ancora in nessun profilo.\n\nCaricare "{name}" li sostituirà. Per tenerli, premi Annulla e crea invece un nuovo profilo.',
+  'Could not load {name} — check your connection and try again.':'Impossibile caricare {name} — controlla la connessione e riprova.',
+  'Enter the 4-digit PIN.':'Inserisci il PIN di 4 cifre.','Wrong PIN — try again.':'PIN errato — riprova.',
+  'Type a name first':'Scrivi prima un nome','PIN must be 4 digits, or leave it blank':'Il PIN deve avere 4 cifre, oppure lascialo vuoto',
+  '"{name}" already exists — pick it from the list':'"{name}" esiste già — sceglilo dall\'elenco','Profile {name} created':'Profilo {name} creato',
+  'Set a PIN':'Imposta un PIN','Change or remove PIN':'Cambia o rimuovi PIN','Set PIN':'Imposta PIN','Change PIN':'Cambia PIN','Remove PIN':'Rimuovi PIN',
+  'Current PIN':'PIN attuale','New PIN (4 digits)':'Nuovo PIN (4 cifre)','Confirm new PIN':'Conferma nuovo PIN',
+  'PIN set':'PIN impostato','PIN changed':'PIN cambiato','PIN removed':'PIN rimosso','{msg} (will sync when online)':'{msg} (si sincronizzerà quando sarai online)',
+  'Current PIN is wrong.':'Il PIN attuale è errato.','New PIN must be 4 digits.':'Il nuovo PIN deve avere 4 cifre.',"The two PINs don't match.":'I due PIN non coincidono.',
+  // home
+  'My training':'I miei allenamenti','Switch profile':'Cambia profilo','Body weight':'Peso corporeo','Save':'Salva',
+  'Training days':'Giorni di allenamento','+ New day':'+ Nuovo giorno','Free training':'Allenamento libero','View stats & progress':'Statistiche e progressi',
+  'No weight logged yet':'Nessun peso registrato','Last saved: {kg} kg — {date}':'Ultimo: {kg} kg — {date}',
+  'Enter a valid weight':'Inserisci un peso valido','Body weight saved ✓':'Peso salvato ✓',
+  'No training days yet.':'Ancora nessun giorno di allenamento.','{n} exercise':'{n} esercizio','{n} exercises':'{n} esercizi',
+  'Edit exercises & targets':'Modifica esercizi e obiettivi',
+  'Day A — Lower':'Giorno A — Gambe','Day B — Upper push':'Giorno B — Spinta','Day C — Upper pull':'Giorno C — Trazione',
+  // workout
+  'Workout':'Allenamento','Skip':'Salta','Save workout':'Salva allenamento','Rest · {name}':'Recupero · {name}','Ready ✓':'Pronto ✓',
+  'How to do it':'Come si fa','{t} rest':'{t} recupero','Set':'Serie','Target':'Obiettivo','Done':'Fatto',
+  '+ Add set':'+ Aggiungi serie','− Remove set':'− Rimuovi serie','Last time: {x}':'Ultima volta: {x}','Start':'Avvia','/side':'/lato',
+  'Unsaved workout restored':'Allenamento non salvato ripristinato','Set a duration first':'Imposta prima una durata',
+  'Set {n} of {name} has values. Remove it anyway?':'La serie {n} di {name} contiene dei valori. Rimuoverla comunque?',
+  'Workout saved ✓':'Allenamento salvato ✓','Remove {name} from this workout?':'Rimuovere {name} da questo allenamento?',
+  'Remove exercise':'Rimuovi esercizio','Add an exercise first':'Aggiungi prima un esercizio',
+  'No exercises yet — add the first one.':'Ancora nessun esercizio — aggiungi il primo.','+ Add exercise':'+ Aggiungi esercizio',
+  // day editor / picker
+  'Edit day':'Modifica giorno','New day':'Nuovo giorno','Day name, e.g. Lower body':'Nome del giorno, es. Gambe',
+  '+ Add exercise from database':'+ Aggiungi esercizio dal database','Save day':'Salva giorno','Delete this day':'Elimina questo giorno',
+  'No exercises yet.':'Ancora nessun esercizio.','Sets':'Serie','Target reps':'Ripetizioni','Duration':'Durata','Rest (sec)':'Recupero (sec)',
+  'Reps':'Ripetizioni','Time':'Tempo','Stretch':'Stretching','Enter a day name':'Inserisci un nome per il giorno','Day saved':'Giorno salvato','Day deleted':'Giorno eliminato',
+  'Add exercise':'Aggiungi esercizio','Search by name or muscle…':'Cerca per nome o muscolo…','Or add a custom exercise':'Oppure aggiungi un esercizio personalizzato',
+  'Exercise name':'Nome esercizio','Muscle group':'Gruppo muscolare','Rest (s)':'Recupero (s)','YouTube link (optional)':'Link YouTube (facoltativo)',
+  'Add custom exercise':'Aggiungi esercizio personalizzato','No matches':'Nessun risultato','{name} added':'{name} aggiunto',
+  'Enter a name':'Inserisci un nome','Exercise added':'Esercizio aggiunto',
+  'Lower body':'Gambe','Push':'Spinta','Pull':'Trazione','Core':'Core','Stretching':'Stretching',
+  // stats / export
+  'Stats':'Statistiche','Workouts this week':'Allenamenti questa settimana','Workouts total':'Allenamenti totali',
+  'Stretching this week':'Stretching questa settimana','Stretching total':'Stretching totale','{n} session':'{n} sessione','{n} sessions':'{n} sessioni',
+  'Training frequency':'Frequenza di allenamento','Sessions per week':'Sessioni a settimana','Log workouts to see frequency.':'Registra degli allenamenti per vedere la frequenza.',
+  'Time stretched per week':'Tempo di stretching a settimana','Weight over time':'Peso nel tempo','Exercise progress':'Progressi per esercizio',
+  'Select an exercise…':'Seleziona un esercizio…','Export to CSV':'Esporta in CSV','No data for this exercise yet.':'Ancora nessun dato per questo esercizio.',
+  'Log at least 2 sessions to see a chart.':'Registra almeno 2 sessioni per vedere un grafico.','Longest set':'Serie più lunga','Total time':'Tempo totale',
+  'Max weight per set':'Peso massimo per serie','Total volume (kg × reps)':'Volume totale (kg × ripetizioni)',
+  'No sessions yet':'Ancora nessuna sessione','CSV exported':'CSV esportato',
+};
+
+// Built-in exercise names (display only — stored names stay English)
+const IT_EX={
+  'Leg press':'Leg press','Leg extension':'Leg extension','Abductor machine':'Macchina abduttori','Adductor machine':'Macchina adduttori',
+  'Calf raises':'Calf raise (polpacci)','Hanging knee raise':'Sollevamento ginocchia alla sbarra','Glute kickback':'Slanci per glutei (kickback)',
+  'Step-up':'Step-up','Seated leg curl':'Leg curl da seduto','Shoulder press machine':'Shoulder press alla macchina','Push-ups':'Piegamenti (push-up)',
+  'Cable lateral raise':'Alzate laterali ai cavi','Chest press machine':'Chest press alla macchina','Incline dumbbell press':'Distensioni su panca inclinata con manubri',
+  'Tricep pushdown':'Pushdown tricipiti ai cavi','Overhead tricep ext.':'Estensioni tricipiti sopra la testa','Dips (assisted)':'Dip assistiti',
+  'Lat pulldown':'Lat machine','Assisted pull-up':'Trazioni assistite','Seated cable row':'Pulley basso (rematore ai cavi)','Face pull':'Face pull',
+  'Dumbbell bicep curl':'Curl bicipiti con manubri','Hammer curl':'Hammer curl','Cable bicep curl':'Curl bicipiti ai cavi',
+  'Plank':'Plank','Dead bug':'Dead bug','Crunch machine':'Crunch alla macchina','Russian twist':'Russian twist',
+  'Standing hamstring stretch':'Allungamento femorali in piedi','Standing quad stretch':'Allungamento quadricipiti in piedi',
+  'Kneeling hip flexor stretch':"Allungamento flessori dell'anca in ginocchio",'Figure-four glute stretch':'Allungamento glutei a 4',
+  'Pigeon stretch':'Posizione del piccione','Butterfly stretch':'Farfalla','Calf stretch (wall)':'Allungamento polpacci al muro',
+  'Seated forward fold':'Piegamento in avanti da seduto','Child pose':'Posizione del bambino','Cat-cow':'Gatto-mucca','Cobra stretch':'Posizione del cobra',
+  'Doorway chest stretch':'Allungamento pettorali alla porta','Cross-body shoulder stretch':'Allungamento spalla a braccio incrociato',
+  'Overhead tricep stretch':'Allungamento tricipiti sopra la testa',
+};
+const IT_MUSCLE={
+  'quads':'quadricipiti','glutes':'glutei','outer glutes':'glutei esterni','inner thighs':'interno coscia','calves':'polpacci','lower core':'addominali bassi',
+  'hamstrings':'femorali','shoulders':'spalle','chest':'petto','triceps':'tricipiti','side delts':'deltoidi laterali','upper chest':'petto alto',
+  'triceps (long head)':'tricipiti (capo lungo)','lats':'dorsali','biceps':'bicipiti','back':'schiena','mid back':'schiena centrale',
+  'rear delts':'deltoidi posteriori','traps':'trapezi','brachialis':'brachiale','core':'core','deep core':'core profondo','abs':'addominali',
+  'obliques':'obliqui','hip flexors':"flessori dell'anca",'hips':'anche','lower back':'zona lombare','spine':'colonna','front delts':'deltoidi anteriori',
+};
+
+function t(key, vars){
+  let s = LANG==='it' && IT[key]!==undefined ? IT[key] : key;
+  if(vars) s=s.replace(/\{(\w+)\}/g,(m,k)=>vars[k]!==undefined?vars[k]:m);
+  return s;
+}
+function tn(n, one, many, vars){ return t(n===1?one:many, {n, ...(vars||{})}); }   // simple plural
+function exLabel(n){ return LANG==='it' && IT_EX[n] ? IT_EX[n] : n; }
+function dayName(n){ return LANG==='it' && IT[n] ? IT[n] : n; }
+function exMuscle(m){
+  if(LANG!=='it' || !m) return m||'';
+  return m.split(',').map(p=>{
+    const k=p.trim(), it=IT_MUSCLE[k.toLowerCase()];
+    if(!it) return k;
+    return k[0]===k[0].toUpperCase() ? it[0].toUpperCase()+it.slice(1) : it;
+  }).join(', ');
+}
+function LOC(){ return LANG==='it'?'it-IT':'en-GB'; }
+
+// translate the fixed text in the page (English is remembered on first run)
+function applyStatic(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    if(el.dataset.en===undefined) el.dataset.en=el.textContent.trim();
+    el.textContent=t(el.dataset.en);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    if(!el.dataset.enPh) el.dataset.enPh=el.placeholder;
+    el.placeholder=t(el.dataset.enPh);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.innerHTML=`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>${LANG.toUpperCase()}`;
+    b.title=LANG==='it'?'Switch to English':'Passa all\'italiano';
+  });
+}
+
+function toggleLang(){
+  LANG = LANG==='it'?'en':'it';
+  try { localStorage.setItem(LANG_KEY, LANG); } catch(e) {}
+  applyStatic();
+  // redraw what's built in code
+  const active=document.querySelector('.screen.active')?.id;
+  if(active==='screen-home') renderHome();
+  if(active==='screen-profile') showProfileScreen();
+  // a free-training session in progress is rebuilt in the new language (values kept)
+  if(typeof freeExercises!=='undefined' && freeExercises.some(Boolean)){
+    saveFreeDraft(); freeExercises=[]; document.getElementById('free-body').innerHTML=''; restoreFreeDraft();
+  }
+}
+
 // ── Exercise database ──────────────────────────────────────────
 const EX_DB = [
   {name:"Leg press",           muscle:"Quads, glutes",        cat:"Lower body",link:"https://www.youtube.com/watch?v=IZxyjW7MPJQ",sets:4,reps:10,rest:90},
@@ -541,7 +690,7 @@ function startTimer(restSecs, exName){
   timerStart=Date.now();
   const bar=document.getElementById('rest-bar');
   bar.classList.add('active');
-  document.getElementById('rest-label').textContent='Rest · '+exName;
+  document.getElementById('rest-label').textContent=t('Rest · {name}',{name:exLabel(exName)});
   updateTimerDisplay();
   timerInterval=setInterval(updateTimerDisplay,500);
 }
@@ -553,7 +702,7 @@ function updateTimerDisplay(){
   const ring=document.getElementById('ring-fg');
 
   if(remaining<=0){
-    clock.textContent='Ready ✓';
+    clock.textContent=t('Ready ✓');
     ring.style.strokeDashoffset=0;
     // vibrate if supported
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
@@ -620,32 +769,32 @@ function renderHome(){
   if(D.bw.length){
     const last=D.bw[D.bw.length-1];
     document.getElementById('bw-last-label').textContent=
-      'Last saved: '+last.kg+' kg — '+new Date(last.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      t('Last saved: {kg} kg — {date}',{kg:last.kg,date:new Date(last.date).toLocaleDateString(LOC(),{day:'numeric',month:'short',year:'numeric'})});
   } else {
-    document.getElementById('bw-last-label').textContent='No weight logged yet';
+    document.getElementById('bw-last-label').textContent=t('No weight logged yet');
   }
   document.getElementById('bw-today').value='';
   const el=document.getElementById('home-days');
-  if(!D.days.length){ el.innerHTML='<div class="empty">No training days yet.</div>'; return; }
+  if(!D.days.length){ el.innerHTML='<div class="empty">'+t('No training days yet.')+'</div>'; return; }
   el.innerHTML=D.days.map(d=>`
     <div class="day-card">
       <div class="day-card-main" onclick="startWorkout(${d.id})">
         <div class="day-dot"></div>
         <div class="day-info">
-          <div class="day-name">${d.name}</div>
-          <div class="day-sub">${d.exercises.length} exercise${d.exercises.length!==1?'s':''}</div>
+          <div class="day-name">${esc(dayName(d.name))}</div>
+          <div class="day-sub">${tn(d.exercises.length,'{n} exercise','{n} exercises')}</div>
         </div>
         <div class="day-arrow">›</div>
       </div>
-      <button class="day-edit-btn" onclick="editDay(${d.id})">Edit exercises &amp; targets</button>
+      <button class="day-edit-btn" onclick="editDay(${d.id})">${esc(t('Edit exercises & targets'))}</button>
     </div>`).join('');
 }
 
 function saveBW(){
   const v=parseFloat(document.getElementById('bw-today').value);
-  if(!v||v<30||v>250){ toast('Enter a valid weight'); return; }
+  if(!v||v<30||v>250){ toast(t('Enter a valid weight')); return; }
   D.bw.push({date:new Date().toISOString(),kg:v});
-  save(); backup(); renderHome(); toast('Body weight saved ✓');
+  save(); backup(); renderHome(); toast(t('Body weight saved ✓'));
 }
 
 // ── Workout ────────────────────────────────────────────────────
@@ -658,12 +807,12 @@ function lastSessionForDay(dayId){
 function startWorkout(id){
   activeDay=D.days.find(d=>d.id===id);
   if(!activeDay) return;
-  document.getElementById('workout-title').textContent=activeDay.name;
+  document.getElementById('workout-title').textContent=dayName(activeDay.name);
   renderWorkoutBody();
   const draft=loadDraft();
   if(draft && draft.dayId===id && draft.state){
     applyWorkoutState(draft.state);
-    toast('Unsaved workout restored');
+    toast(t('Unsaved workout restored'));
   }
   show('screen-workout');
   requestWakeLock();
@@ -679,14 +828,14 @@ function fmtRest(s){
 function isTimed(ex){ return !!ex && ex.type==='time'; }
 function fmtDur(s){ return fmtRest(s)||'0s'; }
 function fmtClock(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
-function targetLabel(ex){ return isTimed(ex) ? fmtDur(ex.duration||0)+(ex.perSide?'/side':'') : ex.reps; }
+function targetLabel(ex){ return isTimed(ex) ? fmtDur(ex.duration||0)+(ex.perSide?t('/side'):'') : ex.reps; }
 
 // Countdown button. Lives in the "Done" cell with the same id the reps input would have,
 // and keeps the logged seconds in its .value — so drafts/remove-set code work unchanged.
 // data-dur = fixed duration, or data-tid = id of an editable target input (free training).
 function timerBtnHTML(id, ex, doneId, restSecs, nameExpr, tid){
   return `<button class="time-btn" id="${id}" value="" ${tid?`data-tid="${tid}"`:`data-dur="${ex.duration||0}"`}
-    data-done="${doneId}" onclick="tapCountdown(this,${restSecs||60},${nameExpr})">Start</button>`;
+    data-done="${doneId}" onclick="tapCountdown(this,${restSecs||60},${nameExpr})">${t('Start')}</button>`;
 }
 
 const countdowns={};   // button id → {end, dur, iv}
@@ -704,14 +853,14 @@ function renderTimerBtn(btn){
   const v=parseInt(btn.value);
   btn.classList.remove('running');
   btn.classList.toggle('logged', v>0);
-  btn.textContent = v>0 ? fmtClock(v) : 'Start';
+  btn.textContent = v>0 ? fmtClock(v) : t('Start');
 }
 
 function tapCountdown(btn, restSecs, exName){
   const c=countdowns[btn.id];
   if(c){ finishCountdown(btn, false); return; }          // tap while running = stop early
   const dur=countdownDur(btn);
-  if(!dur){ toast('Set a duration first'); return; }
+  if(!dur){ toast(t('Set a duration first')); return; }
   stopTimer(); nextTimed=null;
   const end=Date.now()+dur*1000;
   btn.classList.add('running'); btn.classList.remove('logged');
@@ -777,7 +926,7 @@ function lastHint(lastEx){
   const parts=[];
   if(bestKg>0) parts.push(bestKg+' kg max');
   if(bestSecs>0) parts.push(fmtDur(bestSecs)+' max');
-  return parts.length?`<div class="last-hint">Last time: ${parts.join(' · ')}</div>`:'';
+  return parts.length?`<div class="last-hint">${t('Last time: {x}',{x:parts.join(' · ')})}</div>`:'';
 }
 
 function renderWorkoutBody(){
@@ -790,30 +939,30 @@ function renderWorkoutBody(){
 
     const lk=ex.link?`<a class="ex-link" href="${ex.link}" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      How to do it</a>`:'';
+      ${t('How to do it')}</a>`:'';
 
     const hint=lastHint(lastEx);
 
     return `<div class="ex-block">
       <div class="ex-head">
-        <div class="ex-name">${ex.name}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
-        <div class="ex-muscle">${ex.muscle||''}</div>
+        <div class="ex-name">${esc(exLabel(ex.name))}${isStretch(ex)?' <span class="stretch-badge">'+t('Stretch')+'</span>':''}</div>
+        <div class="ex-muscle">${esc(exMuscle(ex.muscle))}</div>
         <div class="ex-meta-row">
           ${lk}
           <span class="ex-rest-badge">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            ${restStr} rest
+            ${t('{t} rest',{t:restStr})}
           </span>
         </div>
       </div>
       <table class="sets-table">
-        <thead><tr><th>Set</th><th>kg</th><th>Target</th><th>Done</th><th></th></tr></thead>
+        <thead><tr><th>${t('Set')}</th><th>kg</th><th>${t('Target')}</th><th>${t('Done')}</th><th></th></tr></thead>
         <tbody id="tb-${ei}">${rows}</tbody>
       </table>
       ${hint}
       <div class="ex-foot">
-        <button class="add-set-btn" onclick="addSet(${ei})">+ Add set</button>
-        <button class="remove-set-btn" id="rm-${ei}" onclick="removeSet(${ei})" ${ex.sets<=1?'disabled':''}>− Remove set</button>
+        <button class="add-set-btn" onclick="addSet(${ei})">${t('+ Add set')}</button>
+        <button class="remove-set-btn" id="rm-${ei}" onclick="removeSet(${ei})" ${ex.sets<=1?'disabled':''}>${t('− Remove set')}</button>
       </div>
     </div>`;
   }).join('');
@@ -889,7 +1038,7 @@ function removeSet(ei){
   const r=document.getElementById(`r${ei}-${si}`);
   const b=document.getElementById(`db${ei}-${si}`);
   const hasData=(w&&w.value!=='')||(r&&r.value!=='')||(b&&b.classList.contains('on'));
-  if(hasData && !confirm(`Set ${si+1} of ${ex.name} has values. Remove it anyway?`)) return;
+  if(hasData && !confirm(t('Set {n} of {name} has values. Remove it anyway?',{n:si+1,name:exLabel(ex.name)}))) return;
   document.getElementById(`row-${ei}-${si}`)?.remove();
   ex.sets--;
   save();
@@ -973,7 +1122,7 @@ function saveWorkout(){
   };
   D.sessions.unshift(session);
   save(); backup(); clearDraft(); activeDay=null;
-  stopTimer(); toast('Workout saved ✓'); goHome();
+  stopTimer(); toast(t('Workout saved ✓')); goHome();
 }
 
 // ── Free training ──────────────────────────────────────────────
@@ -1035,7 +1184,7 @@ function restoreFreeDraft(){
 }
 
 function goFree(){
-  if(!freeExercises.some(Boolean) && restoreFreeDraft()) toast('Unsaved workout restored');
+  if(!freeExercises.some(Boolean) && restoreFreeDraft()) toast(t('Unsaved workout restored'));
   freeOpened=true;
   document.getElementById('free-empty').style.display=freeExercises.some(Boolean)?'none':'block';
   show('screen-free');
@@ -1092,29 +1241,29 @@ function addFreeExercise(ex){
   const last=lastExerciseLog(ex.name);
   const lk=ex.link?`<a class="ex-link" href="${esc(ex.link)}" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      How to do it</a>`:'';
+      ${t('How to do it')}</a>`:'';
   const hint=last?lastHint(last.ex):'';
   const html=`<div class="ex-block" id="fblock-${fi}">
     <div class="ex-head"><div class="ex-head-row"><div>
-      <div class="ex-name">${esc(ex.name)}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
-      <div class="ex-muscle">${esc(ex.muscle||'')}</div>
+      <div class="ex-name">${esc(exLabel(ex.name))}${isStretch(ex)?' <span class="stretch-badge">'+t('Stretch')+'</span>':''}</div>
+      <div class="ex-muscle">${esc(exMuscle(ex.muscle))}</div>
       <div class="ex-meta-row">
         ${lk}
         <span class="ex-rest-badge">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          ${fmtRest(ex.rest||60)} rest
+          ${t('{t} rest',{t:fmtRest(ex.rest||60)})}
         </span>
       </div></div>
-      <button class="ex-row-del" title="Remove exercise" onclick="removeFreeExercise(${fi})">×</button>
+      <button class="ex-row-del" title="${t('Remove exercise')}" onclick="removeFreeExercise(${fi})">×</button>
     </div></div>
     <table class="sets-table">
-      <thead><tr><th>Set</th><th>kg</th><th>Target</th><th>Done</th><th></th></tr></thead>
+      <thead><tr><th>${t('Set')}</th><th>kg</th><th>${t('Target')}</th><th>${t('Done')}</th><th></th></tr></thead>
       <tbody id="ftb-${fi}">${freeRowHTML(fi,0)}</tbody>
     </table>
     ${hint}
     <div class="ex-foot">
-      <button class="add-set-btn" onclick="addFreeSet(${fi})">+ Add set</button>
-      <button class="remove-set-btn" id="frm-${fi}" onclick="removeFreeSet(${fi})" disabled>− Remove set</button>
+      <button class="add-set-btn" onclick="addFreeSet(${fi})">${t('+ Add set')}</button>
+      <button class="remove-set-btn" id="frm-${fi}" onclick="removeFreeSet(${fi})" disabled>${t('− Remove set')}</button>
     </div>
   </div>`;
   document.getElementById('free-body').insertAdjacentHTML('beforeend',html);
@@ -1136,7 +1285,7 @@ function removeFreeSet(fi){
   const si=ex.sets-1;
   const hasData=['fw','fr'].some(p=>document.getElementById(`${p}${fi}-${si}`).value!=='')||
     document.getElementById(`fdb${fi}-${si}`).classList.contains('on');
-  if(hasData && !confirm(`Set ${si+1} of ${ex.name} has values. Remove it anyway?`)) return;
+  if(hasData && !confirm(t('Set {n} of {name} has values. Remove it anyway?',{n:si+1,name:exLabel(ex.name)}))) return;
   document.getElementById(`frow-${fi}-${si}`).remove();
   ex.sets--;
   document.getElementById(`frm-${fi}`).disabled=ex.sets<=1;
@@ -1144,7 +1293,7 @@ function removeFreeSet(fi){
 
 function removeFreeExercise(fi){
   const ex=freeExercises[fi]; if(!ex) return;
-  if(!confirm(`Remove ${ex.name} from this workout?`)) return;
+  if(!confirm(t('Remove {name} from this workout?',{name:exLabel(ex.name)}))) return;
   freeExercises[fi]=null;
   document.getElementById(`fblock-${fi}`).remove();
   if(!freeExercises.some(Boolean)) document.getElementById('free-empty').style.display='block';
@@ -1176,12 +1325,12 @@ function saveFreeWorkout(){
       })
     });
   });
-  if(!exercises.length){ toast('Add an exercise first'); return; }
+  if(!exercises.length){ toast(t('Add an exercise first')); return; }
   D.sessions.unshift({id:Date.now(),dayId:0,dayName:'Free training',date:new Date().toISOString(),exercises});
   save(); backup(); clearFreeDraft();
   freeExercises=[];
   document.getElementById('free-body').innerHTML='';
-  stopTimer(); toast('Workout saved ✓'); goHome();
+  stopTimer(); toast(t('Workout saved ✓')); goHome();
 }
 
 // ── Edit day ───────────────────────────────────────────────────
@@ -1190,7 +1339,7 @@ let editingId=null, editingExercises=[];
 function startNewDay(){
   editingId=null; editingExercises=[];
   document.getElementById('edit-day-name').value='';
-  document.getElementById('edit-title').textContent='New day';
+  document.getElementById('edit-title').textContent=t('New day');
   document.getElementById('del-day-btn').style.display='none';
   renderEditExList(); show('screen-edit');
 }
@@ -1200,8 +1349,8 @@ function editDay(id){
   if(!day) return;
   editingId=id;
   editingExercises=day.exercises.map(e=>({...e}));
-  document.getElementById('edit-day-name').value=day.name;
-  document.getElementById('edit-title').textContent='Edit day';
+  document.getElementById('edit-day-name').value=dayName(day.name);
+  document.getElementById('edit-title').textContent=t('Edit day');
   document.getElementById('del-day-btn').style.display='block';
   renderEditExList(); show('screen-edit');
 }
@@ -1209,34 +1358,34 @@ function editDay(id){
 function renderEditExList(){
   const el=document.getElementById('edit-ex-list');
   if(!editingExercises.length){
-    el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:4px 0 12px">No exercises yet.</div>';
+    el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:4px 0 12px">'+t('No exercises yet.')+'</div>';
     return;
   }
   el.innerHTML=editingExercises.map((ex,i)=>`
     <div class="ex-row">
       <div class="ex-row-top">
-        <div class="ex-row-name">${ex.name}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
+        <div class="ex-row-name">${esc(exLabel(ex.name))}${isStretch(ex)?' <span class="stretch-badge">'+t('Stretch')+'</span>':''}</div>
         <button class="ex-row-del" onclick="removeEditEx(${i})">×</button>
       </div>
-      <div class="ex-row-muscle">${ex.muscle||''}</div>
+      <div class="ex-row-muscle">${esc(exMuscle(ex.muscle))}</div>
       <div class="seg" role="group" aria-label="Exercise type">
-        <button class="${isTimed(ex)?'':'on'}" onclick="setEditType(${i},'reps')">Reps</button>
-        <button class="${isTimed(ex)?'on':''}" onclick="setEditType(${i},'time')">Time</button>
+        <button class="${isTimed(ex)?'':'on'}" onclick="setEditType(${i},'reps')">${t('Reps')}</button>
+        <button class="${isTimed(ex)?'on':''}" onclick="setEditType(${i},'time')">${t('Time')}</button>
       </div>
       <div class="ex-row-fields">
         <div class="field-group">
-          <label>Sets</label>
+          <label>${t('Sets')}</label>
           <input type="number" min="1" max="10" value="${ex.sets}" onchange="editingExercises[${i}].sets=parseInt(this.value)||3">
         </div>
         ${isTimed(ex) ? `<div class="field-group">
-          <label>Duration</label>
+          <label>${t('Duration')}</label>
           ${durationFieldHTML(`edit-dur-${i}`, ex.duration||45, `editingExercises[${i}].duration=durFieldSecs('edit-dur-${i}')||45`)}
         </div>` : `<div class="field-group">
-          <label>Target reps</label>
+          <label>${t('Target reps')}</label>
           <input type="number" min="1" max="60" value="${ex.reps}" onchange="editingExercises[${i}].reps=parseInt(this.value)||10">
         </div>`}
         <div class="field-group">
-          <label>Rest (sec)</label>
+          <label>${t('Rest (sec)')}</label>
           <input type="number" min="10" max="600" value="${ex.rest||60}" onchange="editingExercises[${i}].rest=parseInt(this.value)||60">
         </div>
       </div>
@@ -1276,20 +1425,20 @@ function toggleDurUnit(id){
 
 function saveEditDay(){
   const name=document.getElementById('edit-day-name').value.trim();
-  if(!name){ toast('Enter a day name'); return; }
+  if(!name){ toast(t('Enter a day name')); return; }
   if(editingId){
     const day=D.days.find(d=>d.id===editingId);
     if(day){ day.name=name; day.exercises=editingExercises; }
   } else {
     D.days.push({id:nextId++,name,exercises:editingExercises});
   }
-  save(); toast('Day saved'); goHome();
+  save(); toast(t('Day saved')); goHome();
 }
 
 function deleteCurDay(){
   if(!editingId) return;
   D.days=D.days.filter(d=>d.id!==editingId);
-  save(); toast('Day deleted'); goHome();
+  save(); toast(t('Day deleted')); goHome();
 }
 
 // ── Exercise picker ────────────────────────────────────────────
@@ -1304,16 +1453,16 @@ function closeExPicker(){ document.getElementById('overlay-ex').classList.remove
 
 function renderExList(q){
   const list=document.getElementById('ex-modal-list');
-  const all=EX_DB.filter(e=>!q||e.name.toLowerCase().includes(q)||(e.muscle||'').toLowerCase().includes(q)||(e.cat||'').toLowerCase().includes(q));
-  if(!all.length){ list.innerHTML='<div class="empty">No matches</div>'; return; }
+  const all=EX_DB.filter(e=>!q||e.name.toLowerCase().includes(q)||exLabel(e.name).toLowerCase().includes(q)||exMuscle(e.muscle).toLowerCase().includes(q)||(e.muscle||'').toLowerCase().includes(q)||(e.cat||'').toLowerCase().includes(q));
+  if(!all.length){ list.innerHTML='<div class="empty">'+t('No matches')+'</div>'; return; }
   const groups={};
   all.forEach(e=>{ if(!groups[e.cat]) groups[e.cat]=[]; groups[e.cat].push(e); });
   list.innerHTML=Object.entries(groups).map(([cat,exs])=>
-    `<div class="modal-group-label">${cat}</div>`+
+    `<div class="modal-group-label">${t(cat)}</div>`+
     exs.map(e=>`<div class="modal-ex-row" onclick="pickEx(EX_DB[${EX_DB.indexOf(e)}])">
       <div class="modal-ex-info">
-        <div class="modal-ex-name">${e.name}${e.stretch?' <span class="stretch-badge">Stretch</span>':''}</div>
-        <div class="modal-ex-muscle">${e.muscle} · ${e.sets}×${targetLabel(e)} · ${fmtRest(e.rest)} rest</div>
+        <div class="modal-ex-name">${esc(exLabel(e.name))}${e.stretch?' <span class="stretch-badge">'+t('Stretch')+'</span>':''}</div>
+        <div class="modal-ex-muscle">${esc(exMuscle(e.muscle))} · ${e.sets}×${targetLabel(e)} · ${t('{t} rest',{t:fmtRest(e.rest)})}</div>
       </div>
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);stroke-width:2.2;fill:none;stroke-linecap:round;flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>`).join('')
@@ -1360,15 +1509,15 @@ function timedFields(e){
 function pickEx(e){
   if(pickerTarget==='free'){
     addFreeExercise({name:e.name,muscle:e.muscle,rest:e.rest||60,link:e.link,reps:'',...timedFields(e)});
-    closeExPicker(); toast(e.name+' added'); return;
+    closeExPicker(); toast(t('{name} added',{name:exLabel(e.name)})); return;
   }
   editingExercises.push({name:e.name,muscle:e.muscle,sets:e.sets,reps:e.reps,rest:e.rest||60,link:e.link,...timedFields(e)});
-  renderEditExList(); closeExPicker(); toast(e.name+' added');
+  renderEditExList(); closeExPicker(); toast(t('{name} added',{name:exLabel(e.name)}));
 }
 
 function addCustomEx(){
   const name=document.getElementById('custom-ex-name').value.trim();
-  if(!name){ toast('Enter a name'); return; }
+  if(!name){ toast(t('Enter a name')); return; }
   const tf=customTypeFields();
   if(pickerTarget==='free'){
     addFreeExercise({
@@ -1379,7 +1528,7 @@ function addCustomEx(){
       ...tf, reps:tf.reps||''
     });
     resetCustomForm();
-    closeExPicker(); toast(name+' added'); return;
+    closeExPicker(); toast(t('{name} added',{name})); return;
   }
   editingExercises.push({
     name,
@@ -1390,7 +1539,7 @@ function addCustomEx(){
     ...tf, reps:tf.type==='time'?0:(tf.reps||12)
   });
   resetCustomForm();
-  renderEditExList(); closeExPicker(); toast('Exercise added');
+  renderEditExList(); closeExPicker(); toast(t('Exercise added'));
 }
 
 document.getElementById('overlay-ex').addEventListener('click',e=>{
@@ -1436,12 +1585,12 @@ function renderStats(){
   });
   const sw=Object.entries(stretchWeeks).sort((a,b)=>a[0]<b[0]?-1:1).slice(-8);
   const maxSw=Math.max(...sw.map(x=>x[1]),1);
-  const stretchChart=sw.length?`<div class="section-sep">Stretching</div>
-    <div class="chart-card"><div class="chart-title">Time stretched per week</div><div class="freq-bars" style="height:100px">${sw.map(([k,v])=>`
+  const stretchChart=sw.length?`<div class="section-sep">${t('Stretching')}</div>
+    <div class="chart-card"><div class="chart-title">${t('Time stretched per week')}</div><div class="freq-bars" style="height:100px">${sw.map(([k,v])=>`
       <div class="freq-bar-wrap">
         <div class="freq-lbl">${fmtStretch(v)}</div>
         <div class="freq-bar stretch-bar" style="height:${Math.round((v/maxSw)*60)+4}px"></div>
-        <div class="freq-lbl">${new Date(k).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+        <div class="freq-lbl">${new Date(k).toLocaleDateString(LOC(),{day:'numeric',month:'short'})}</div>
       </div>`).join('')}</div></div>`:'';
 
   const weekCounts={};
@@ -1457,7 +1606,7 @@ function renderStats(){
     const h=Math.round((v/maxFreq)*68)+4;
     return `<div class="freq-bar-wrap">
       <div class="freq-bar" style="height:${h}px"></div>
-      <div class="freq-lbl">${new Date(k).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+      <div class="freq-lbl">${new Date(k).toLocaleDateString(LOC(),{day:'numeric',month:'short'})}</div>
     </div>`;
   }).join('');
 
@@ -1468,14 +1617,14 @@ function renderStats(){
     const rng=maxK-minK||0.5;
     const pts=bws.map((b,i)=>({
       x:18+(i/(bws.length-1))*264, y:10+(1-(b.kg-minK)/rng)*58,
-      kg:b.kg, lbl:new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+      kg:b.kg, lbl:new Date(b.date).toLocaleDateString(LOC(),{day:'numeric',month:'short'})
     }));
     const poly=pts.map(p=>`${p.x},${p.y}`).join(' ');
     const dots=pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="var(--accent)"/>`).join('');
     const diff=bws[bws.length-1].kg-bws[0].kg;
-    bwChart=`<div class="section-sep">Body weight</div>
+    bwChart=`<div class="section-sep">${t('Body weight')}</div>
     <div class="chart-card">
-      <div class="chart-title">Weight over time <span style="font-weight:400;color:${diff<=0?'var(--accent)':'#c0392b'}">${diff>=0?'+':''}${diff.toFixed(1)} kg</span></div>
+      <div class="chart-title">${t('Weight over time')} <span style="font-weight:400;color:${diff<=0?'var(--accent)':'#c0392b'}">${diff>=0?'+':''}${diff.toFixed(1)} kg</span></div>
       <svg viewBox="0 0 300 80" style="width:100%;display:block">
         <polyline points="${poly}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
         ${dots}
@@ -1489,29 +1638,29 @@ function renderStats(){
 
   const allExNames=[...new Set(D.sessions.flatMap(s=>s.exercises.map(e=>e.name)))].sort();
   const pickerSection=D.sessions.length?`
-    <div class="section-sep">Exercise progress</div>
+    <div class="section-sep">${t('Exercise progress')}</div>
     <div class="ex-picker-wrap">
       <select class="ex-picker" id="ex-picker" onchange="renderExCharts()">
-        <option value="">Select an exercise…</option>
-        ${allExNames.map(n=>`<option value="${n}">${n}</option>`).join('')}
+        <option value="">${t('Select an exercise…')}</option>
+        ${allExNames.map(n=>`<option value="${esc(n)}">${esc(exLabel(n))}</option>`).join('')}
       </select>
     </div>
     <div id="ex-charts"></div>`:'';
 
   el.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-tile"><div class="stat-lbl">Workouts this week</div><div class="stat-val">${thisWeek}</div></div>
-      <div class="stat-tile"><div class="stat-lbl">Workouts total</div><div class="stat-val">${total}</div></div>
-      <div class="stat-tile"><div class="stat-lbl">Stretching this week</div><div class="stat-val">${fmtStretch(stretchWeek)}</div><div class="stat-sub">${stretchSessWeek} session${stretchSessWeek!==1?'s':''}</div></div>
-      <div class="stat-tile"><div class="stat-lbl">Stretching total</div><div class="stat-val">${fmtStretch(stretchAll)}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">${t('Workouts this week')}</div><div class="stat-val">${thisWeek}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">${t('Workouts total')}</div><div class="stat-val">${total}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">${t('Stretching this week')}</div><div class="stat-val">${fmtStretch(stretchWeek)}</div><div class="stat-sub">${tn(stretchSessWeek,'{n} session','{n} sessions')}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">${t('Stretching total')}</div><div class="stat-val">${fmtStretch(stretchAll)}</div></div>
     </div>
-    <div class="section-sep">Training frequency</div>
-    ${weeks.length?`<div class="chart-card"><div class="chart-title">Sessions per week</div><div class="freq-bars">${freqBars}</div></div>`:'<div class="empty" style="padding:12px">Log workouts to see frequency.</div>'}
+    <div class="section-sep">${t('Training frequency')}</div>
+    ${weeks.length?`<div class="chart-card"><div class="chart-title">${t('Sessions per week')}</div><div class="freq-bars">${freqBars}</div></div>`:'<div class="empty" style="padding:12px">'+t('Log workouts to see frequency.')+'</div>'}
     ${stretchChart}
     ${bwChart}
     ${pickerSection}
     <div style="margin-top:16px">
-      <button onclick="exportCSV()" style="width:100%;padding:13px;border-radius:var(--radius);background:none;color:var(--text2);border:1px solid var(--border2);font-size:14px;cursor:pointer">Export to CSV</button>
+      <button onclick="exportCSV()" style="width:100%;padding:13px;border-radius:var(--radius);background:none;color:var(--text2);border:1px solid var(--border2);font-size:14px;cursor:pointer">${t('Export to CSV')}</button>
     </div>`;
 }
 
@@ -1530,17 +1679,17 @@ function renderExCharts(){
     const vol=ex.sets.reduce((a,st)=>a+(st.kg||0)*(st.reps||0),0);
     const maxSecs=Math.max(...ex.sets.map(st=>st.secs||0));
     const totSecs=ex.sets.reduce((a,st)=>a+(st.secs||0),0);
-    if(maxKg>0||vol>0||maxSecs>0) pts.push({date:s.date,maxKg,vol,maxSecs,totSecs,lbl:new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
+    if(maxKg>0||vol>0||maxSecs>0) pts.push({date:s.date,maxKg,vol,maxSecs,totSecs,lbl:new Date(s.date).toLocaleDateString(LOC(),{day:'numeric',month:'short'})});
   });
-  if(!pts.length){ el.innerHTML='<div class="empty">No data for this exercise yet.</div>'; return; }
-  if(pts.length===1){ el.innerHTML='<div class="empty">Log at least 2 sessions to see a chart.</div>'; return; }
+  if(!pts.length){ el.innerHTML='<div class="empty">'+t('No data for this exercise yet.')+'</div>'; return; }
+  if(pts.length===1){ el.innerHTML='<div class="empty">'+t('Log at least 2 sessions to see a chart.')+'</div>'; return; }
   if(timed){
     // timed sets show duration instead of reps
-    el.innerHTML=lineChart('Longest set','maxSecs','s',pts)+lineChart('Total time','totSecs','s',pts)+
-      (pts.some(p=>p.maxKg>0)?lineChart('Max weight per set','maxKg','kg',pts):'');
+    el.innerHTML=lineChart(t('Longest set'),'maxSecs','s',pts)+lineChart(t('Total time'),'totSecs','s',pts)+
+      (pts.some(p=>p.maxKg>0)?lineChart(t('Max weight per set'),'maxKg','kg',pts):'');
     return;
   }
-  el.innerHTML=lineChart('Max weight per set','maxKg','kg',pts)+lineChart('Total volume (kg × reps)','vol','',pts);
+  el.innerHTML=lineChart(t('Max weight per set'),'maxKg','kg',pts)+lineChart(t('Total volume (kg × reps)'),'vol','',pts);
 }
 
 function lineChart(title,key,unit,pts){
@@ -1565,10 +1714,10 @@ function lineChart(title,key,unit,pts){
 
 // ── Export ─────────────────────────────────────────────────────
 function exportCSV(){
-  if(!D.sessions.length){ toast('No sessions yet'); return; }
+  if(!D.sessions.length){ toast(t('No sessions yet')); return; }
   let csv='Date,Day,Exercise,Muscle,Stretch,Set,Weight (kg),Target,Reps done,Duration (s),Done\n';
   D.sessions.forEach(s=>{
-    const d=new Date(s.date).toLocaleDateString('en-GB');
+    const d=new Date(s.date).toLocaleDateString(LOC());
     s.exercises.forEach(ex=>{
       const isT=ex.type==='time';
       ex.sets.forEach((st,i)=>{
@@ -1581,7 +1730,7 @@ function exportCSV(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download='gym-log-'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click(); toast('CSV exported');
+  a.click(); toast(t('CSV exported'));
 }
 
 // ── Toast ──────────────────────────────────────────────────────
@@ -1755,11 +1904,11 @@ async function loadProfileList(){
   const st=document.getElementById('profile-status');
   const list=document.getElementById('profile-list');
   list.innerHTML='';
-  if(!ghToken()){ st.textContent='Add the backup key above to see saved profiles.'; return; }
-  st.textContent='Loading…';
+  if(!ghToken()){ st.textContent=t('Add the backup key above to see saved profiles.'); return; }
+  st.textContent=t('Loading…');
   try {
     const names=await ghListProfiles();
-    st.textContent=names.length?'':'No profiles yet — create one below.';
+    st.textContent=names.length?'':t('No profiles yet — create one below.');
     names.forEach(n=>{
       const b=document.createElement('button');
       b.className='profile-btn';
@@ -1770,16 +1919,16 @@ async function loadProfileList(){
     });
   } catch(e) {
     st.textContent=e.message==='github 401'||e.message==='github 403'||e.message==='github 404'
-      ? 'The backup key was not accepted. Check it and save it again.'
+      ? t('The backup key was not accepted. Check it and save it again.')
       : navigator.onLine===false
-        ? 'Offline — could not load profiles.'
-        : 'Could not reach GitHub ('+(e.message||'network error')+'). Try again in a moment.';
+        ? t('Offline — could not load profiles.')
+        : t('Could not reach GitHub ({err}). Try again in a moment.',{err:e.message||'network error'});
   }
 }
 
 function saveKey(){
   const v=cleanToken(document.getElementById('key-input').value);
-  if(!v){ toast('Paste the backup key first'); return; }
+  if(!v){ toast(t('Paste the backup key first')); return; }
   lsSet(TOKEN_KEY,v);
   document.getElementById('key-input').value='';
   showProfileScreen();
@@ -1792,7 +1941,7 @@ function changeKey(){
 
 async function selectProfile(id){
   const st=document.getElementById('profile-status');
-  st.textContent='Loading '+id+'…';
+  st.textContent=t('Loading {name}…',{name:id});
   try {
     const remote=await ghGetProfile(id);
     const remoteCount=remote?(remote.data.sessions||[]).length:-1;
@@ -1801,8 +1950,7 @@ async function selectProfile(id){
     const keepLocal = owner===id && D.sessions.length>=remoteCount;
     // data from before profiles existed would be replaced — make sure that's intended
     if(!keepLocal && !owner && D.sessions.length>0 && !confirm(
-      `This device has ${D.sessions.length} workout(s) that are not in any profile yet.\n\n`+
-      `Loading "${id}" will replace them. To keep them, press Cancel and create a new profile instead.`)){
+      t('This device has {n} workout(s) that are not in any profile yet.\n\nLoading "{name}" will replace them. To keep them, press Cancel and create a new profile instead.',{n:D.sessions.length,name:id}))){
       st.textContent=''; return;
     }
     // the PIN always comes from whichever copy changed it last
@@ -1822,7 +1970,7 @@ async function selectProfile(id){
     };
     if(pinHash) askPin(id, pinHash, finish); else finish();
   } catch(e) {
-    st.textContent='Could not load '+id+' — check your connection and try again.';
+    st.textContent=t('Could not load {name} — check your connection and try again.',{name:id});
   }
 }
 
@@ -1843,9 +1991,9 @@ async function submitPin(){
   if(!pinPending) return;
   const inp=document.getElementById('pin-entry');
   const err=document.getElementById('pin-error');
-  if(!validPin(inp.value)){ err.textContent='Enter the 4-digit PIN.'; return; }
+  if(!validPin(inp.value)){ err.textContent=t('Enter the 4-digit PIN.'); return; }
   if(await hashPin(pinPending.id, inp.value)!==pinPending.hash){
-    err.textContent='Wrong PIN — try again.'; inp.value=''; inp.focus(); return;
+    err.textContent=t('Wrong PIN — try again.'); inp.value=''; inp.focus(); return;
   }
   const p=pinPending; pinPending=null;
   p.onOk();
@@ -1855,9 +2003,9 @@ function cancelPin(){ pinPending=null; showProfileScreen(); }
 
 async function createProfile(){
   const id=profileName(document.getElementById('new-profile-name').value);
-  if(!id){ toast('Type a name first'); return; }
+  if(!id){ toast(t('Type a name first')); return; }
   const pin=document.getElementById('new-profile-pin').value.trim();
-  if(pin && !validPin(pin)){ toast('PIN must be 4 digits, or leave it blank'); return; }
+  if(pin && !validPin(pin)){ toast(t('PIN must be 4 digits, or leave it blank')); return; }
   const owner=lsGet(OWNER_KEY);
   // data on this device from before profiles existed (no owner) is uploaded as this profile;
   // data that belongs to another profile is not copied
@@ -1865,7 +2013,7 @@ async function createProfile(){
   const data = (!owner || owner===id) ? normalizeData(D) : emptyData();
   if(ghToken()){
     try {
-      if(await ghGetProfile(id)){ toast('"'+id+'" already exists — pick it from the list'); return; }
+      if(await ghGetProfile(id)){ toast(t('"{name}" already exists — pick it from the list',{name:id})); return; }
     } catch(e) { /* offline: create locally, it uploads on the next save */ }
   }
   if(pin) setPinFields(data, await hashPin(id,pin));
@@ -1875,7 +2023,7 @@ async function createProfile(){
   lsSet(PIN_OK_KEY,'true');
   document.getElementById('new-profile-pin').value='';
   backup();
-  toast('Profile '+id+' created');
+  toast(t('Profile {name} created',{name:id}));
 }
 
 function switchProfile(){
@@ -1911,10 +2059,10 @@ async function syncOnOpen(){
 // ── PIN modal (home screen) ────────────────────────────────────
 function openPinModal(){
   const has=!!D.pinHash;
-  document.getElementById('pin-modal-title').textContent=has?'Change or remove PIN':'Set a PIN';
+  document.getElementById('pin-modal-title').textContent=t(has?'Change or remove PIN':'Set a PIN');
   document.getElementById('pin-current-wrap').style.display=has?'block':'none';
   document.getElementById('pin-remove-btn').style.display=has?'block':'none';
-  document.getElementById('pin-save-btn').textContent=has?'Change PIN':'Set PIN';
+  document.getElementById('pin-save-btn').textContent=t(has?'Change PIN':'Set PIN');
   ['pin-current','pin-new','pin-confirm'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('pin-modal-error').textContent='';
   document.getElementById('overlay-pin').classList.add('open');
@@ -1931,16 +2079,16 @@ async function pushPinChange(msg){
   save();
   closePinModal();
   const ok=await backup();
-  toast(ok?msg:msg+' (will sync when online)');
+  toast(ok?t(msg):t('{msg} (will sync when online)',{msg:t(msg)}));
 }
 
 async function savePinFromModal(){
   const err=document.getElementById('pin-modal-error');
   const id=lsGet(PROFILE_KEY);
-  if(D.pinHash && !(await checkCurrentPin())){ err.textContent='Current PIN is wrong.'; return; }
+  if(D.pinHash && !(await checkCurrentPin())){ err.textContent=t('Current PIN is wrong.'); return; }
   const p1=document.getElementById('pin-new').value, p2=document.getElementById('pin-confirm').value;
-  if(!validPin(p1)){ err.textContent='New PIN must be 4 digits.'; return; }
-  if(p1!==p2){ err.textContent='The two PINs don\'t match.'; return; }
+  if(!validPin(p1)){ err.textContent=t('New PIN must be 4 digits.'); return; }
+  if(p1!==p2){ err.textContent=t("The two PINs don't match."); return; }
   const had=!!D.pinHash;
   setPinFields(D, await hashPin(id,p1));
   await pushPinChange(had?'PIN changed':'PIN set');
@@ -1948,12 +2096,13 @@ async function savePinFromModal(){
 
 async function removePinFromModal(){
   const err=document.getElementById('pin-modal-error');
-  if(!(await checkCurrentPin())){ err.textContent='Current PIN is wrong.'; return; }
+  if(!(await checkCurrentPin())){ err.textContent=t('Current PIN is wrong.'); return; }
   setPinFields(D, null);
   await pushPinChange('PIN removed');
 }
 
 // ── Start ──────────────────────────────────────────────────────
+applyStatic();
 if(lsGet(PROFILE_KEY)){
   renderHome();
   syncOnOpen();
