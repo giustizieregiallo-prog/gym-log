@@ -706,6 +706,7 @@ function clearDraft(){
 }
 
 function saveDraft(){
+  saveFreeDraft();
   if(!activeDay || !document.getElementById('screen-workout').classList.contains('active')) return;
   const state=collectWorkoutState();
   const hasData=Object.values(state).some(sets=>sets.some(s=>s.kg!==''||s.reps!==''||s.done));
@@ -748,7 +749,59 @@ function saveWorkout(){
 // so typed values are kept. The session stays in memory if she goes Home and comes back.
 let freeExercises=[];
 
+// Draft of an unsaved free session (survives closing the app). Saved on Home,
+// when the app is backgrounded/closed; restored when Free training is reopened.
+const FREE_DRAFT_KEY='gl5_free_draft';
+
+function collectFreeState(){
+  const list=[];
+  freeExercises.forEach((ex,fi)=>{
+    if(!ex) return;
+    list.push({
+      name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link,
+      sets:Array.from({length:ex.sets},(_,si)=>({
+        kg:document.getElementById(`fw${fi}-${si}`)?.value||'',
+        target:document.getElementById(`ft${fi}-${si}`)?.value||'',
+        reps:document.getElementById(`fr${fi}-${si}`)?.value||'',
+        done:document.getElementById(`fdb${fi}-${si}`)?.classList.contains('on')||false
+      }))
+    });
+  });
+  return list;
+}
+
+let freeOpened=false;   // only touch the stored draft once Free training was opened this run
+function saveFreeDraft(){
+  if(!freeOpened) return;
+  const list=collectFreeState();
+  if(list.length) lsSet(FREE_DRAFT_KEY, JSON.stringify({savedAt:new Date().toISOString(), exercises:list}));
+  else lsDel(FREE_DRAFT_KEY);
+}
+
+function clearFreeDraft(){ lsDel(FREE_DRAFT_KEY); }
+
+function restoreFreeDraft(){
+  let d=null;
+  try { d=JSON.parse(lsGet(FREE_DRAFT_KEY)||'null'); } catch(e) {}
+  if(!d || !Array.isArray(d.exercises) || !d.exercises.length) return false;
+  d.exercises.forEach(ex=>{
+    const fi=freeExercises.length;
+    addFreeExercise({name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link});
+    for(let si=1; si<(ex.sets||[]).length; si++) addFreeSet(fi);
+    (ex.sets||[]).forEach((s,si)=>{
+      document.getElementById(`fw${fi}-${si}`).value=s.kg;
+      document.getElementById(`ft${fi}-${si}`).value=s.target;
+      document.getElementById(`fr${fi}-${si}`).value=s.reps;
+      document.getElementById(`fdb${fi}-${si}`).classList.toggle('on',!!s.done);
+      freeBeat(fi,si);
+    });
+  });
+  return true;
+}
+
 function goFree(){
+  if(!freeExercises.some(Boolean) && restoreFreeDraft()) toast('Unsaved workout restored');
+  freeOpened=true;
   document.getElementById('free-empty').style.display=freeExercises.some(Boolean)?'none':'block';
   show('screen-free');
   requestWakeLock();
@@ -871,7 +924,7 @@ function saveFreeWorkout(){
   });
   if(!exercises.length){ toast('Add an exercise first'); return; }
   D.sessions.unshift({id:Date.now(),dayId:0,dayName:'Free training',date:new Date().toISOString(),exercises});
-  save(); backup();
+  save(); backup(); clearFreeDraft();
   freeExercises=[];
   document.getElementById('free-body').innerHTML='';
   stopTimer(); toast('Workout saved ✓'); goHome();
@@ -1356,7 +1409,7 @@ async function createProfile(){
 function switchProfile(){
   backup();           // best effort: upload the current profile before leaving it
   lsDel(PROFILE_KEY);
-  clearDraft();
+  clearDraft(); clearFreeDraft();
   freeExercises=[]; document.getElementById('free-body').innerHTML='';
   showProfileScreen();
 }
