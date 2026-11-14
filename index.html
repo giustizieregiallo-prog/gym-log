@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gym log</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2d6a4f">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 :root {
   --bg:#f5f5f2;--card:#fff;--card2:#f0f0ec;
@@ -178,6 +185,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast.show{opacity:1}
 .empty{text-align:center;color:var(--text2);padding:36px 20px;font-size:14px}
 
+/* free training */
+.free-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--card);color:var(--accent);border:1.5px solid var(--accent);font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.free-btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
+.free-add-btn{width:100%;padding:15px;border-radius:var(--radius);border:1.5px dashed var(--accent);background:var(--accent-bg);color:var(--accent);font-size:16px;font-weight:600;cursor:pointer}
+.inp-target{width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 2px;font-size:14px;text-align:center;background:var(--bg);color:var(--text3)}
+.inp-target:focus{outline:none;border-color:var(--accent);color:var(--text)}
+.ex-head-row{display:flex;align-items:flex-start;gap:8px}
+.ex-head-row>div{flex:1}
+
 /* profiles */
 .switch-profile-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:6px 0 6px 8px;white-space:nowrap}
 .profile-pad{padding:16px}
@@ -230,6 +246,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="section-label">Training days <button onclick="startNewDay()">+ New day</button></div>
     <div id="home-days"></div>
+    <button class="free-btn" onclick="goFree()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Free training
+    </button>
     <button class="stats-btn" onclick="goStats()">
       <svg viewBox="0 0 24 24"><path d="M3 20h18M8 16V10m4 6V4m4 12v-6"/></svg>
       View stats &amp; progress
@@ -262,6 +282,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="workout-pad" id="workout-body"></div>
   <button class="save-workout-btn" onclick="saveWorkout()">Save workout</button>
+</div>
+
+<!-- FREE TRAINING -->
+<div class="screen" id="screen-free">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Home</button>
+    <h1>Free training</h1>
+  </div>
+  <div class="workout-pad">
+    <div id="free-body"></div>
+    <div class="empty" id="free-empty">No exercises yet — add the first one.</div>
+    <button class="free-add-btn" onclick="openExPicker('free')">+ Add exercise</button>
+  </div>
+  <button class="save-workout-btn" onclick="saveFreeWorkout()">Save workout</button>
 </div>
 
 <!-- STATS -->
@@ -440,7 +474,31 @@ function show(id){
   document.getElementById(id).classList.add('active');
   document.getElementById(id).scrollTop=0;
 }
-function goHome(){ saveDraft(); stopTimer(); renderHome(); show('screen-home'); }
+function goHome(){ saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
+
+// ── Wake lock (keep screen on during a workout) ────────────────
+let wakeLock=null;
+async function requestWakeLock(){
+  try {
+    if(!('wakeLock' in navigator) || wakeLock) return;
+    const lock=await navigator.wakeLock.request('screen');
+    // she may have left the workout while the request was pending
+    if(!onWorkoutScreen()){ lock.release(); return; }
+    wakeLock=lock;
+    lock.addEventListener('release',()=>{ if(wakeLock===lock) wakeLock=null; });
+  } catch(e) { wakeLock=null; }
+}
+function releaseWakeLock(){
+  try { if(wakeLock) wakeLock.release(); } catch(e) {}
+  wakeLock=null;
+}
+function onWorkoutScreen(){
+  return ['screen-workout','screen-free'].some(id=>document.getElementById(id).classList.contains('active'));
+}
+// the browser drops the lock when the app goes to the background — take it again on return
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && onWorkoutScreen()) requestWakeLock();
+});
 function goStats(){ renderStats(); show('screen-stats'); }
 
 // ── Home ───────────────────────────────────────────────────────
@@ -494,6 +552,7 @@ function startWorkout(id){
     toast('Unsaved workout restored');
   }
   show('screen-workout');
+  requestWakeLock();
 }
 
 function fmtRest(s){
@@ -562,7 +621,7 @@ function tapDone(btn, ei, si, restSecs, exName){
   btn.classList.toggle('on');
   if(!wasOn){
     // flash the row
-    const row=document.getElementById(`row-${ei}-${si}`);
+    const row=btn.closest('tr');
     if(row){ row.classList.remove('set-done-flash'); void row.offsetWidth; row.classList.add('set-done-flash'); }
     // start rest timer
     startTimer(restSecs, exName);
@@ -683,6 +742,141 @@ function saveWorkout(){
   stopTimer(); toast('Workout saved ✓'); goHome();
 }
 
+// ── Free training ──────────────────────────────────────────────
+// freeExercises[fi] = {name,muscle,reps,rest,link,sets} or null once removed.
+// Rows use ids fw/fr/ft/fdb{fi}-{si}; blocks and rows are appended, never re-rendered,
+// so typed values are kept. The session stays in memory if she goes Home and comes back.
+let freeExercises=[];
+
+function goFree(){
+  document.getElementById('free-empty').style.display=freeExercises.some(Boolean)?'none':'block';
+  show('screen-free');
+  requestWakeLock();
+}
+
+// most recent session containing this exercise (D.sessions is newest first)
+function lastExerciseLog(name){
+  const key=name.trim().toLowerCase();
+  for(const s of D.sessions){
+    const ex=(s.exercises||[]).find(e=>(e.name||'').trim().toLowerCase()===key);
+    if(ex && ex.sets && ex.sets.some(st=>(st.kg||0)>0||(st.reps||0)>0)){
+      const best=ex.sets.reduce((a,st)=>((st.kg||0)>(a.kg||0)?st:a), ex.sets[0]);
+      const maxKg=Math.max(...ex.sets.map(st=>st.kg||0));
+      const reps=best.reps||Math.max(...ex.sets.map(st=>st.reps||0));
+      return {maxKg, reps};
+    }
+  }
+  return null;
+}
+
+function freeRowHTML(fi, si){
+  const ex=freeExercises[fi];
+  const last=lastExerciseLog(ex.name);
+  const kgPh=last&&last.maxKg>0?last.maxKg:'kg';
+  const repPh=last&&last.reps>0?last.reps:'—';
+  return `<tr id="frow-${fi}-${si}">
+    <td><span class="set-num">${si+1}</span></td>
+    <td><input class="inp-kg" type="number" min="0" step="0.5" placeholder="${kgPh}" id="fw${fi}-${si}"></td>
+    <td><input class="inp-target" type="number" min="0" placeholder="—" id="ft${fi}-${si}" value="${ex.reps||''}" oninput="freeBeat(${fi},${si})"></td>
+    <td><input class="inp-reps" type="number" min="0" placeholder="${repPh}" id="fr${fi}-${si}" oninput="freeBeat(${fi},${si})"></td>
+    <td><button class="done-btn" id="fdb${fi}-${si}" onclick="tapDone(this,${fi},${si},${ex.rest||60},freeExercises[${fi}].name)">✓</button></td>
+  </tr>`;
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function addFreeExercise(ex){
+  const fi=freeExercises.length;
+  freeExercises.push({...ex, sets:1});
+  const last=lastExerciseLog(ex.name);
+  const lk=ex.link?`<a class="ex-link" href="${esc(ex.link)}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      How to do it</a>`:'';
+  const hint=last&&last.maxKg>0?`<div class="last-hint">Last time: ${last.maxKg} kg max</div>`:'';
+  const html=`<div class="ex-block" id="fblock-${fi}">
+    <div class="ex-head"><div class="ex-head-row"><div>
+      <div class="ex-name">${esc(ex.name)}</div>
+      <div class="ex-muscle">${esc(ex.muscle||'')}</div>
+      <div class="ex-meta-row">
+        ${lk}
+        <span class="ex-rest-badge">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${fmtRest(ex.rest||60)} rest
+        </span>
+      </div></div>
+      <button class="ex-row-del" title="Remove exercise" onclick="removeFreeExercise(${fi})">×</button>
+    </div></div>
+    <table class="sets-table">
+      <thead><tr><th>Set</th><th>kg</th><th>Target</th><th>Done</th><th></th></tr></thead>
+      <tbody id="ftb-${fi}">${freeRowHTML(fi,0)}</tbody>
+    </table>
+    ${hint}
+    <div class="ex-foot">
+      <button class="add-set-btn" onclick="addFreeSet(${fi})">+ Add set</button>
+      <button class="remove-set-btn" id="frm-${fi}" onclick="removeFreeSet(${fi})" disabled>− Remove set</button>
+    </div>
+  </div>`;
+  document.getElementById('free-body').insertAdjacentHTML('beforeend',html);
+  document.getElementById('free-empty').style.display='none';
+}
+
+function addFreeSet(fi){
+  const ex=freeExercises[fi]; if(!ex) return;
+  const si=ex.sets; ex.sets++;
+  document.getElementById(`ftb-${fi}`).insertAdjacentHTML('beforeend',freeRowHTML(fi,si));
+  // carry the target over from the previous set
+  const prevT=document.getElementById(`ft${fi}-${si-1}`);
+  if(prevT) document.getElementById(`ft${fi}-${si}`).value=prevT.value;
+  document.getElementById(`frm-${fi}`).disabled=false;
+}
+
+function removeFreeSet(fi){
+  const ex=freeExercises[fi]; if(!ex||ex.sets<=1) return;
+  const si=ex.sets-1;
+  const hasData=['fw','fr'].some(p=>document.getElementById(`${p}${fi}-${si}`).value!=='')||
+    document.getElementById(`fdb${fi}-${si}`).classList.contains('on');
+  if(hasData && !confirm(`Set ${si+1} of ${ex.name} has values. Remove it anyway?`)) return;
+  document.getElementById(`frow-${fi}-${si}`).remove();
+  ex.sets--;
+  document.getElementById(`frm-${fi}`).disabled=ex.sets<=1;
+}
+
+function removeFreeExercise(fi){
+  const ex=freeExercises[fi]; if(!ex) return;
+  if(!confirm(`Remove ${ex.name} from this workout?`)) return;
+  freeExercises[fi]=null;
+  document.getElementById(`fblock-${fi}`).remove();
+  if(!freeExercises.some(Boolean)) document.getElementById('free-empty').style.display='block';
+}
+
+function freeBeat(fi,si){
+  const t=parseInt(document.getElementById(`ft${fi}-${si}`).value);
+  const r=document.getElementById(`fr${fi}-${si}`);
+  r.classList.toggle('beat', t>0 && parseInt(r.value)>=t);
+}
+
+function saveFreeWorkout(){
+  const exercises=[];
+  freeExercises.forEach((ex,fi)=>{
+    if(!ex) return;
+    exercises.push({
+      name:ex.name, muscle:ex.muscle,
+      sets:Array.from({length:ex.sets},(_,si)=>({
+        kg:parseFloat(document.getElementById(`fw${fi}-${si}`)?.value)||0,
+        reps:parseInt(document.getElementById(`fr${fi}-${si}`)?.value)||0,
+        target:parseInt(document.getElementById(`ft${fi}-${si}`)?.value)||0,
+        done:document.getElementById(`fdb${fi}-${si}`)?.classList.contains('on')||false
+      }))
+    });
+  });
+  if(!exercises.length){ toast('Add an exercise first'); return; }
+  D.sessions.unshift({id:Date.now(),dayId:0,dayName:'Free training',date:new Date().toISOString(),exercises});
+  save(); backup();
+  freeExercises=[];
+  document.getElementById('free-body').innerHTML='';
+  stopTimer(); toast('Workout saved ✓'); goHome();
+}
+
 // ── Edit day ───────────────────────────────────────────────────
 let editingId=null, editingExercises=[];
 
@@ -756,7 +950,9 @@ function deleteCurDay(){
 }
 
 // ── Exercise picker ────────────────────────────────────────────
-function openExPicker(){
+let pickerTarget='edit';   // 'edit' = day editor, 'free' = free training
+function openExPicker(target){
+  pickerTarget=target==='free'?'free':'edit';
   document.getElementById('ex-search').value='';
   renderExList('');
   document.getElementById('overlay-ex').classList.add('open');
@@ -784,6 +980,10 @@ function renderExList(q){
 function filterExList(){ renderExList(document.getElementById('ex-search').value.toLowerCase()); }
 
 function pickEx(e){
+  if(pickerTarget==='free'){
+    addFreeExercise({name:e.name,muscle:e.muscle,rest:e.rest||60,link:e.link,reps:''});
+    closeExPicker(); toast(e.name+' added'); return;
+  }
   editingExercises.push({name:e.name,muscle:e.muscle,sets:e.sets,reps:e.reps,rest:e.rest||60,link:e.link});
   renderEditExList(); closeExPicker(); toast(e.name+' added');
 }
@@ -791,6 +991,18 @@ function pickEx(e){
 function addCustomEx(){
   const name=document.getElementById('custom-ex-name').value.trim();
   if(!name){ toast('Enter a name'); return; }
+  if(pickerTarget==='free'){
+    addFreeExercise({
+      name,
+      muscle:document.getElementById('custom-ex-muscle').value.trim(),
+      reps:parseInt(document.getElementById('custom-ex-reps').value)||'',
+      rest:parseInt(document.getElementById('custom-ex-rest').value)||60,
+      link:document.getElementById('custom-ex-link').value.trim()
+    });
+    ['custom-ex-name','custom-ex-muscle','custom-ex-sets','custom-ex-reps','custom-ex-rest','custom-ex-link']
+      .forEach(id=>document.getElementById(id).value='');
+    closeExPicker(); toast(name+' added'); return;
+  }
   editingExercises.push({
     name,
     muscle:document.getElementById('custom-ex-muscle').value.trim(),
@@ -1145,6 +1357,7 @@ function switchProfile(){
   backup();           // best effort: upload the current profile before leaving it
   lsDel(PROFILE_KEY);
   clearDraft();
+  freeExercises=[]; document.getElementById('free-body').innerHTML='';
   showProfileScreen();
 }
 
@@ -1171,6 +1384,11 @@ if(lsGet(PROFILE_KEY)){
   syncOnOpen();
 } else {
   showProfileScreen();
+}
+
+// ── Offline support / install as app ───────────────────────────
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 </script>
 </body>
