@@ -185,6 +185,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast.show{opacity:1}
 .empty{text-align:center;color:var(--text2);padding:36px 20px;font-size:14px}
 
+/* timed exercises */
+.seg{display:inline-flex;border:1px solid var(--border2);border-radius:8px;overflow:hidden;margin:8px 0 2px}
+.seg button{background:none;border:none;padding:5px 14px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.modal-custom .seg{margin:0 0 8px}
+.time-btn{width:100%;min-height:30px;border:1.5px solid var(--accent);border-radius:6px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;padding:3px 2px}
+.time-btn.running{background:var(--accent);color:#fff;font-size:19px;font-weight:700;min-height:36px}
+.time-btn.logged{background:none;color:var(--text);border-color:var(--border2);font-weight:500}
+.dur-field{display:flex;gap:4px;align-items:stretch;flex:1}
+.dur-field input{flex:1;min-width:0}
+.modal-custom .dur-field input{margin-bottom:0}
+.modal-custom-row .dur-field{flex:1.4}
+.dur-unit-btn{border:1px solid var(--border2);background:var(--card2);color:var(--text2);border-radius:5px;font-size:12px;padding:0 8px;cursor:pointer;min-width:38px}
+.dur-wrap{display:flex;align-items:center;gap:2px}
+.dur-unit{font-size:11px;color:var(--text3)}
+
 /* free training */
 .free-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--card);color:var(--accent);border:1.5px solid var(--accent);font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
 .free-btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
@@ -357,9 +373,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mlbl">Or add a custom exercise</div>
       <input id="custom-ex-name" placeholder="Exercise name">
       <input id="custom-ex-muscle" placeholder="Muscle group">
+      <div class="seg" id="custom-ex-type" data-type="reps" role="group" aria-label="Exercise type">
+        <button class="on" onclick="setCustomType('reps')">Reps</button>
+        <button onclick="setCustomType('time')">Time</button>
+      </div>
       <div class="modal-custom-row">
         <input id="custom-ex-sets"  type="number" placeholder="Sets" min="1" max="10">
         <input id="custom-ex-reps"  type="number" placeholder="Target reps" min="1" max="60">
+        <div class="dur-field" id="custom-dur-wrap" style="display:none">
+          <input id="custom-ex-dur" type="number" min="0" step="5" data-unit="sec" placeholder="Time">
+          <button type="button" class="dur-unit-btn" onclick="toggleDurUnit('custom-ex-dur')">sec</button>
+        </div>
         <input id="custom-ex-rest"  type="number" placeholder="Rest (s)" min="10" max="600">
       </div>
       <input id="custom-ex-link" placeholder="YouTube link (optional)">
@@ -417,8 +441,8 @@ const EX_DB = [
   {name:"Dumbbell bicep curl", muscle:"Biceps",               cat:"Pull",      link:"https://www.youtube.com/watch?v=ykJmrZ5v0Oo",sets:3,reps:12,rest:60},
   {name:"Hammer curl",         muscle:"Biceps, brachialis",   cat:"Pull",      link:"https://www.youtube.com/watch?v=zC3nLlEvin4",sets:3,reps:12,rest:60},
   {name:"Cable bicep curl",    muscle:"Biceps",               cat:"Pull",      link:"https://www.youtube.com/watch?v=NFzTWp2qpiE",sets:3,reps:12,rest:60},
-  {name:"Plank",               muscle:"Core",                 cat:"Core",      link:"https://www.youtube.com/watch?v=ASdvN_XEl_c",sets:3,reps:40,rest:60},
-  {name:"Dead bug",            muscle:"Deep core",            cat:"Core",      link:"https://www.youtube.com/watch?v=4XLEnwUr1d8",sets:3,reps:10,rest:45},
+  {name:"Plank",               muscle:"Core",                 cat:"Core",      link:"https://www.youtube.com/watch?v=ASdvN_XEl_c",sets:3,reps:0,type:"time",duration:45,rest:60},
+  {name:"Dead bug",            muscle:"Deep core",            cat:"Core",      link:"https://www.youtube.com/watch?v=4XLEnwUr1d8",sets:3,reps:0,type:"time",duration:30,perSide:true,rest:45},
   {name:"Crunch machine",      muscle:"Abs",                  cat:"Core",      link:"https://www.youtube.com/watch?v=N_8pB-LFTO0",sets:3,reps:15,rest:45},
   {name:"Russian twist",       muscle:"Obliques",             cat:"Core",      link:"https://www.youtube.com/watch?v=wkD8rjkodUI",sets:3,reps:20,rest:45},
 ];
@@ -438,7 +462,7 @@ const DEFAULT_DAYS = [
     {name:"Push-ups",           muscle:"Chest, triceps",  sets:3,reps:12,rest:60,link:"https://www.youtube.com/watch?v=IODxDxX7oi4"},
     {name:"Tricep pushdown",    muscle:"Triceps",         sets:3,reps:12,rest:60,link:"https://www.youtube.com/watch?v=2-LAMcpzODU"},
     {name:"Cable lateral raise",muscle:"Side delts",      sets:3,reps:15,rest:60,link:"https://www.youtube.com/watch?v=PPiHzHoSWuU"},
-    {name:"Plank",              muscle:"Core",            sets:3,reps:40,rest:60,link:"https://www.youtube.com/watch?v=ASdvN_XEl_c"},
+    {name:"Plank",              muscle:"Core",            sets:3,reps:0,type:"time",duration:45,rest:60,link:"https://www.youtube.com/watch?v=ASdvN_XEl_c"},
   ]},
   {id:3,name:"Day C — Upper pull",exercises:[
     {name:"Lat pulldown",       muscle:"Lats, biceps",    sets:4,reps:10,rest:90,link:"https://www.youtube.com/watch?v=CAwf7n6Luuc"},
@@ -462,6 +486,7 @@ if (!D.days || D.days.length === 0) {
 }
 if (!D.sessions) D.sessions = [];
 if (!D.bw) D.bw = [];
+migrateTimed(D);
 
 let nextId = Math.max(0, ...D.days.map(d=>d.id||0)) + 1;
 function save(){
@@ -519,7 +544,7 @@ function show(id){
   document.getElementById(id).classList.add('active');
   document.getElementById(id).scrollTop=0;
 }
-function goHome(){ saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
+function goHome(){ stopAllCountdowns(); saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
 
 // ── Wake lock (keep screen on during a workout) ────────────────
 let wakeLock=null;
@@ -605,17 +630,110 @@ function fmtRest(s){
   return s>=60 ? Math.floor(s/60)+'m'+(s%60?''+(s%60)+'s':'') : s+'s';
 }
 
+// ── Timed exercises ────────────────────────────────────────────
+// ex.type==='time' → ex.duration (seconds) replaces ex.reps. Logged sets store secs instead of reps.
+function isTimed(ex){ return !!ex && ex.type==='time'; }
+function fmtDur(s){ return fmtRest(s)||'0s'; }
+function fmtClock(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function targetLabel(ex){ return isTimed(ex) ? fmtDur(ex.duration||0)+(ex.perSide?'/side':'') : ex.reps; }
+
+// Countdown button. Lives in the "Done" cell with the same id the reps input would have,
+// and keeps the logged seconds in its .value — so drafts/remove-set code work unchanged.
+// data-dur = fixed duration, or data-tid = id of an editable target input (free training).
+function timerBtnHTML(id, ex, doneId, restSecs, nameExpr, tid){
+  return `<button class="time-btn" id="${id}" value="" ${tid?`data-tid="${tid}"`:`data-dur="${ex.duration||0}"`}
+    data-done="${doneId}" onclick="tapCountdown(this,${restSecs||60},${nameExpr})">Start</button>`;
+}
+
+const countdowns={};   // button id → {end, dur, iv}
+
+function countdownDur(btn){
+  if(btn.dataset.tid){
+    const t=document.getElementById(btn.dataset.tid);
+    return parseInt(t.value)||parseInt(t.placeholder)||0;
+  }
+  return parseInt(btn.dataset.dur)||0;
+}
+
+function renderTimerBtn(btn){
+  if(countdowns[btn.id]) return;
+  const v=parseInt(btn.value);
+  btn.classList.remove('running');
+  btn.classList.toggle('logged', v>0);
+  btn.textContent = v>0 ? fmtClock(v) : 'Start';
+}
+
+function tapCountdown(btn, restSecs, exName){
+  const c=countdowns[btn.id];
+  if(c){ finishCountdown(btn, false); return; }          // tap while running = stop early
+  const dur=countdownDur(btn);
+  if(!dur){ toast('Set a duration first'); return; }
+  stopTimer();
+  const end=Date.now()+dur*1000;
+  btn.classList.add('running'); btn.classList.remove('logged');
+  const tick=()=>{
+    if(!btn.isConnected){ clearInterval(countdowns[btn.id]?.iv); delete countdowns[btn.id]; return; }  // set removed
+    const left=(end-Date.now())/1000;
+    if(left<=0){ finishCountdown(btn, true, restSecs, exName); return; }
+    btn.textContent=fmtClock(left);
+  };
+  countdowns[btn.id]={end, dur, iv:setInterval(tick,250)};
+  tick();
+}
+
+// completed=true: full duration reached → flash, vibrate, tick ✓ and start the rest timer
+function finishCountdown(btn, completed, restSecs, exName){
+  const c=countdowns[btn.id]; if(!c) return;
+  clearInterval(c.iv); delete countdowns[btn.id];
+  const done=Math.round(c.dur-Math.max(0,(c.end-Date.now())/1000));
+  btn.value = completed ? c.dur : (done>0 ? done : '');
+  renderTimerBtn(btn);
+  if(completed){
+    if(navigator.vibrate) navigator.vibrate([300,100,300]);
+    const db=document.getElementById(btn.dataset.done);
+    if(db && !db.classList.contains('on')) tapDone(db,0,0,restSecs,exName);
+    else { const row=btn.closest('tr'); if(row){ row.classList.remove('set-done-flash'); void row.offsetWidth; row.classList.add('set-done-flash'); } startTimer(restSecs,exName); }
+  }
+}
+
+// stop any running countdown and keep the seconds done so far (before saving / leaving)
+function stopAllCountdowns(){
+  Object.keys(countdowns).forEach(id=>{ const b=document.getElementById(id); if(b) finishCountdown(b,false); else { clearInterval(countdowns[id].iv); delete countdowns[id]; } });
+}
+
+// seconds to log for a timed set: what the countdown recorded, else the target if ticked ✓
+function loggedSecs(btn, doneBtn, target){
+  const v=parseInt(btn&&btn.value)||0;
+  if(v>0) return v;
+  return doneBtn&&doneBtn.classList.contains('on') ? (target||0) : 0;
+}
+
 function setRowHTML(ex, ei, si, lastEx){
   const ls=lastEx?(lastEx.sets[si]||null):null;
   const lkg=ls&&ls.kg>0?ls.kg:'';
   const lrp=ls&&ls.reps>0?ls.reps:'';
+  const nameArg=`'${ex.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}'`;
+  const doneCell = isTimed(ex)
+    ? timerBtnHTML(`r${ei}-${si}`, ex, `db${ei}-${si}`, ex.rest||60, nameArg)
+    : `<input class="inp-reps" type="number" min="0" placeholder="${lrp||'—'}" id="r${ei}-${si}" oninput="checkBeat(this,${ex.reps})">`;
   return `<tr id="row-${ei}-${si}">
         <td><span class="set-num">${si+1}</span></td>
         <td><input class="inp-kg" type="number" min="0" step="0.5" placeholder="${lkg||'kg'}" id="w${ei}-${si}"></td>
-        <td><span class="target-cell">${ex.reps}</span></td>
-        <td><input class="inp-reps" type="number" min="0" placeholder="${lrp||'—'}" id="r${ei}-${si}" oninput="checkBeat(this,${ex.reps})"></td>
-        <td><button class="done-btn" id="db${ei}-${si}" onclick="tapDone(this,${ei},${si},${ex.rest||60},'${ex.name.replace(/'/g,"\\'")}')">✓</button></td>
+        <td><span class="target-cell">${targetLabel(ex)}</span></td>
+        <td>${doneCell}</td>
+        <td><button class="done-btn" id="db${ei}-${si}" onclick="tapDone(this,${ei},${si},${ex.rest||60},${nameArg})">✓</button></td>
       </tr>`;
+}
+
+// "Last time: 40 kg max" / "Last time: 45s max" / both
+function lastHint(lastEx){
+  if(!lastEx||!lastEx.sets||!lastEx.sets.length) return '';
+  const bestKg=Math.max(...lastEx.sets.map(s=>s.kg||0));
+  const bestSecs=Math.max(...lastEx.sets.map(s=>s.secs||0));
+  const parts=[];
+  if(bestKg>0) parts.push(bestKg+' kg max');
+  if(bestSecs>0) parts.push(fmtDur(bestSecs)+' max');
+  return parts.length?`<div class="last-hint">Last time: ${parts.join(' · ')}</div>`:'';
 }
 
 function renderWorkoutBody(){
@@ -630,11 +748,7 @@ function renderWorkoutBody(){
       <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       How to do it</a>`:'';
 
-    let hint='';
-    if(lastEx){
-      const bestKg=Math.max(...lastEx.sets.map(s=>s.kg||0));
-      if(bestKg>0) hint=`<div class="last-hint">Last time: ${bestKg} kg max</div>`;
-    }
+    const hint=lastHint(lastEx);
 
     return `<div class="ex-block">
       <div class="ex-head">
@@ -733,7 +847,7 @@ function applyWorkoutState(state){
       const r=document.getElementById(`r${ei}-${si}`);
       const b=document.getElementById(`db${ei}-${si}`);
       if(w) w.value=s.kg;
-      if(r){ r.value=s.reps; checkBeat(r,ex.reps); }
+      if(r){ r.value=s.reps; if(r.dataset.done) renderTimerBtn(r); else checkBeat(r,ex.reps); }
       if(b) b.classList.toggle('on',!!s.done);
     });
   });
@@ -770,17 +884,21 @@ window.addEventListener('pagehide',saveDraft);
 
 function saveWorkout(){
   if(!activeDay) return;
+  stopAllCountdowns();
   const now=new Date().toISOString();
   const session={
     id:Date.now(),dayId:activeDay.id,dayName:activeDay.name,date:now,
     exercises:activeDay.exercises.map((ex,ei)=>({
       name:ex.name,muscle:ex.muscle,
-      sets:Array.from({length:ex.sets},(_,si)=>({
-        kg:parseFloat(document.getElementById(`w${ei}-${si}`)?.value)||0,
-        reps:parseInt(document.getElementById(`r${ei}-${si}`)?.value)||0,
-        target:ex.reps,
-        done:document.getElementById(`db${ei}-${si}`)?.classList.contains('on')||false
-      }))
+      ...(isTimed(ex)?{type:'time'}:{}),
+      sets:Array.from({length:ex.sets},(_,si)=>{
+        const r=document.getElementById(`r${ei}-${si}`), db=document.getElementById(`db${ei}-${si}`);
+        const kg=parseFloat(document.getElementById(`w${ei}-${si}`)?.value)||0;
+        const done=db?.classList.contains('on')||false;
+        return isTimed(ex)
+          ? {kg, reps:0, secs:loggedSecs(r,db,ex.duration), target:ex.duration||0, done}
+          : {kg, reps:parseInt(r?.value)||0, target:ex.reps, done};
+      })
     }))
   };
   D.sessions.unshift(session);
@@ -804,6 +922,7 @@ function collectFreeState(){
     if(!ex) return;
     list.push({
       name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link,
+      type:ex.type, duration:ex.duration, perSide:ex.perSide,
       sets:Array.from({length:ex.sets},(_,si)=>({
         kg:document.getElementById(`fw${fi}-${si}`)?.value||'',
         target:document.getElementById(`ft${fi}-${si}`)?.value||'',
@@ -831,7 +950,8 @@ function restoreFreeDraft(){
   if(!d || !Array.isArray(d.exercises) || !d.exercises.length) return false;
   d.exercises.forEach(ex=>{
     const fi=freeExercises.length;
-    addFreeExercise({name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link});
+    addFreeExercise({name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link,
+      type:ex.type, duration:ex.duration, perSide:ex.perSide});
     for(let si=1; si<(ex.sets||[]).length; si++) addFreeSet(fi);
     (ex.sets||[]).forEach((s,si)=>{
       document.getElementById(`fw${fi}-${si}`).value=s.kg;
@@ -857,11 +977,12 @@ function lastExerciseLog(name){
   const key=name.trim().toLowerCase();
   for(const s of D.sessions){
     const ex=(s.exercises||[]).find(e=>(e.name||'').trim().toLowerCase()===key);
-    if(ex && ex.sets && ex.sets.some(st=>(st.kg||0)>0||(st.reps||0)>0)){
+    if(ex && ex.sets && ex.sets.some(st=>(st.kg||0)>0||(st.reps||0)>0||(st.secs||0)>0)){
       const best=ex.sets.reduce((a,st)=>((st.kg||0)>(a.kg||0)?st:a), ex.sets[0]);
       const maxKg=Math.max(...ex.sets.map(st=>st.kg||0));
       const reps=best.reps||Math.max(...ex.sets.map(st=>st.reps||0));
-      return {maxKg, reps};
+      const secs=Math.max(...ex.sets.map(st=>st.secs||0));
+      return {maxKg, reps, secs, ex};
     }
   }
   return null;
@@ -872,12 +993,24 @@ function freeRowHTML(fi, si){
   const last=lastExerciseLog(ex.name);
   const kgPh=last&&last.maxKg>0?last.maxKg:'kg';
   const repPh=last&&last.reps>0?last.reps:'—';
+  const name=`freeExercises[${fi}].name`;
+  if(isTimed(ex)){
+    // target = editable duration in seconds; placeholder = what was held last time
+    const durPh=last&&last.secs>0?last.secs:'sec';
+    return `<tr id="frow-${fi}-${si}">
+    <td><span class="set-num">${si+1}</span></td>
+    <td><input class="inp-kg" type="number" min="0" step="0.5" placeholder="${kgPh}" id="fw${fi}-${si}"></td>
+    <td><div class="dur-wrap"><input class="inp-target" type="number" min="0" placeholder="${durPh}" id="ft${fi}-${si}" value="${ex.duration||''}"><span class="dur-unit">s</span></div></td>
+    <td>${timerBtnHTML(`fr${fi}-${si}`, ex, `fdb${fi}-${si}`, ex.rest||60, name, `ft${fi}-${si}`)}</td>
+    <td><button class="done-btn" id="fdb${fi}-${si}" onclick="tapDone(this,${fi},${si},${ex.rest||60},${name})">✓</button></td>
+  </tr>`;
+  }
   return `<tr id="frow-${fi}-${si}">
     <td><span class="set-num">${si+1}</span></td>
     <td><input class="inp-kg" type="number" min="0" step="0.5" placeholder="${kgPh}" id="fw${fi}-${si}"></td>
     <td><input class="inp-target" type="number" min="0" placeholder="—" id="ft${fi}-${si}" value="${ex.reps||''}" oninput="freeBeat(${fi},${si})"></td>
     <td><input class="inp-reps" type="number" min="0" placeholder="${repPh}" id="fr${fi}-${si}" oninput="freeBeat(${fi},${si})"></td>
-    <td><button class="done-btn" id="fdb${fi}-${si}" onclick="tapDone(this,${fi},${si},${ex.rest||60},freeExercises[${fi}].name)">✓</button></td>
+    <td><button class="done-btn" id="fdb${fi}-${si}" onclick="tapDone(this,${fi},${si},${ex.rest||60},${name})">✓</button></td>
   </tr>`;
 }
 
@@ -890,7 +1023,7 @@ function addFreeExercise(ex){
   const lk=ex.link?`<a class="ex-link" href="${esc(ex.link)}" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       How to do it</a>`:'';
-  const hint=last&&last.maxKg>0?`<div class="last-hint">Last time: ${last.maxKg} kg max</div>`:'';
+  const hint=last?lastHint(last.ex):'';
   const html=`<div class="ex-block" id="fblock-${fi}">
     <div class="ex-head"><div class="ex-head-row"><div>
       <div class="ex-name">${esc(ex.name)}</div>
@@ -948,23 +1081,29 @@ function removeFreeExercise(fi){
 }
 
 function freeBeat(fi,si){
-  const t=parseInt(document.getElementById(`ft${fi}-${si}`).value);
   const r=document.getElementById(`fr${fi}-${si}`);
+  if(!r || r.dataset.done) { if(r) renderTimerBtn(r); return; }   // timed: just refresh the button
+  const t=parseInt(document.getElementById(`ft${fi}-${si}`).value);
   r.classList.toggle('beat', t>0 && parseInt(r.value)>=t);
 }
 
 function saveFreeWorkout(){
+  stopAllCountdowns();
   const exercises=[];
   freeExercises.forEach((ex,fi)=>{
     if(!ex) return;
     exercises.push({
       name:ex.name, muscle:ex.muscle,
-      sets:Array.from({length:ex.sets},(_,si)=>({
-        kg:parseFloat(document.getElementById(`fw${fi}-${si}`)?.value)||0,
-        reps:parseInt(document.getElementById(`fr${fi}-${si}`)?.value)||0,
-        target:parseInt(document.getElementById(`ft${fi}-${si}`)?.value)||0,
-        done:document.getElementById(`fdb${fi}-${si}`)?.classList.contains('on')||false
-      }))
+      ...(isTimed(ex)?{type:'time'}:{}),
+      sets:Array.from({length:ex.sets},(_,si)=>{
+        const r=document.getElementById(`fr${fi}-${si}`), db=document.getElementById(`fdb${fi}-${si}`);
+        const kg=parseFloat(document.getElementById(`fw${fi}-${si}`)?.value)||0;
+        const target=parseInt(document.getElementById(`ft${fi}-${si}`)?.value)||0;
+        const done=db?.classList.contains('on')||false;
+        return isTimed(ex)
+          ? {kg, reps:0, secs:loggedSecs(r,db,target), target, done}
+          : {kg, reps:parseInt(r?.value)||0, target, done};
+      })
     });
   });
   if(!exercises.length){ toast('Add an exercise first'); return; }
@@ -1010,15 +1149,22 @@ function renderEditExList(){
         <button class="ex-row-del" onclick="removeEditEx(${i})">×</button>
       </div>
       <div class="ex-row-muscle">${ex.muscle||''}</div>
+      <div class="seg" role="group" aria-label="Exercise type">
+        <button class="${isTimed(ex)?'':'on'}" onclick="setEditType(${i},'reps')">Reps</button>
+        <button class="${isTimed(ex)?'on':''}" onclick="setEditType(${i},'time')">Time</button>
+      </div>
       <div class="ex-row-fields">
         <div class="field-group">
           <label>Sets</label>
           <input type="number" min="1" max="10" value="${ex.sets}" onchange="editingExercises[${i}].sets=parseInt(this.value)||3">
         </div>
-        <div class="field-group">
+        ${isTimed(ex) ? `<div class="field-group">
+          <label>Duration</label>
+          ${durationFieldHTML(`edit-dur-${i}`, ex.duration||45, `editingExercises[${i}].duration=durFieldSecs('edit-dur-${i}')||45`)}
+        </div>` : `<div class="field-group">
           <label>Target reps</label>
           <input type="number" min="1" max="60" value="${ex.reps}" onchange="editingExercises[${i}].reps=parseInt(this.value)||10">
-        </div>
+        </div>`}
         <div class="field-group">
           <label>Rest (sec)</label>
           <input type="number" min="10" max="600" value="${ex.rest||60}" onchange="editingExercises[${i}].rest=parseInt(this.value)||60">
@@ -1028,6 +1174,35 @@ function renderEditExList(){
 }
 
 function removeEditEx(i){ editingExercises.splice(i,1); renderEditExList(); }
+
+function setEditType(i, type){
+  const ex=editingExercises[i];
+  if(type==='time'){ ex.type='time'; if(!ex.duration) ex.duration=45; }
+  else { ex.type='reps'; delete ex.perSide; if(!ex.reps) ex.reps=10; }   // explicit, so the timed migration leaves it alone
+  renderEditExList();
+}
+
+// Duration input: always stored in seconds; the sec/min button only changes how it is shown/typed.
+function durationFieldHTML(id, secs, onchange){
+  const useMin = secs>=120 && secs%60===0;
+  return `<div class="dur-field">
+    <input type="number" min="0" step="${useMin?'0.5':'5'}" id="${id}" data-unit="${useMin?'min':'sec'}"
+      value="${useMin?secs/60:secs}" onchange="${onchange}">
+    <button type="button" class="dur-unit-btn" onclick="toggleDurUnit('${id}')">${useMin?'min':'sec'}</button>
+  </div>`;
+}
+function durFieldSecs(id){
+  const el=document.getElementById(id); const v=parseFloat(el.value)||0;
+  return Math.round(el.dataset.unit==='min'?v*60:v);
+}
+function toggleDurUnit(id){
+  const el=document.getElementById(id); const secs=durFieldSecs(id);
+  const toMin=el.dataset.unit!=='min';
+  el.dataset.unit=toMin?'min':'sec';
+  el.step=toMin?'0.5':'5';
+  if(el.value!=='') el.value=toMin?+(secs/60).toFixed(2):secs;
+  el.nextElementSibling.textContent=el.dataset.unit;
+}
 
 function saveEditDay(){
   const name=document.getElementById('edit-day-name').value.trim();
@@ -1068,49 +1243,74 @@ function renderExList(q){
     exs.map(e=>`<div class="modal-ex-row" onclick='pickEx(${JSON.stringify(e)})'>
       <div class="modal-ex-info">
         <div class="modal-ex-name">${e.name}</div>
-        <div class="modal-ex-muscle">${e.muscle} · ${e.sets}×${e.reps} · ${fmtRest(e.rest)} rest</div>
+        <div class="modal-ex-muscle">${e.muscle} · ${e.sets}×${targetLabel(e)} · ${fmtRest(e.rest)} rest</div>
       </div>
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);stroke-width:2.2;fill:none;stroke-linecap:round;flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>`).join('')
   ).join('');
 }
 
+function setCustomType(type){
+  const seg=document.getElementById('custom-ex-type');
+  seg.dataset.type=type;
+  seg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',(i===1)===(type==='time')));
+  document.getElementById('custom-ex-reps').style.display=type==='time'?'none':'';
+  document.getElementById('custom-dur-wrap').style.display=type==='time'?'flex':'none';
+}
+
+// type-specific fields of the custom exercise form
+function customTypeFields(){
+  if(document.getElementById('custom-ex-type').dataset.type==='time'){
+    return {type:'time', duration:durFieldSecs('custom-ex-dur')||45, reps:0};
+  }
+  return {reps:parseInt(document.getElementById('custom-ex-reps').value)||0};
+}
+
+function resetCustomForm(){
+  ['custom-ex-name','custom-ex-muscle','custom-ex-sets','custom-ex-reps','custom-ex-rest','custom-ex-link','custom-ex-dur']
+    .forEach(id=>document.getElementById(id).value='');
+  const d=document.getElementById('custom-ex-dur');
+  if(d.dataset.unit==='min') toggleDurUnit('custom-ex-dur');
+  setCustomType('reps');
+}
+
 function filterExList(){ renderExList(document.getElementById('ex-search').value.toLowerCase()); }
+
+function timedFields(e){ return isTimed(e)?{type:'time',duration:e.duration||45,...(e.perSide?{perSide:true}:{})}:{}; }
 
 function pickEx(e){
   if(pickerTarget==='free'){
-    addFreeExercise({name:e.name,muscle:e.muscle,rest:e.rest||60,link:e.link,reps:''});
+    addFreeExercise({name:e.name,muscle:e.muscle,rest:e.rest||60,link:e.link,reps:'',...timedFields(e)});
     closeExPicker(); toast(e.name+' added'); return;
   }
-  editingExercises.push({name:e.name,muscle:e.muscle,sets:e.sets,reps:e.reps,rest:e.rest||60,link:e.link});
+  editingExercises.push({name:e.name,muscle:e.muscle,sets:e.sets,reps:e.reps,rest:e.rest||60,link:e.link,...timedFields(e)});
   renderEditExList(); closeExPicker(); toast(e.name+' added');
 }
 
 function addCustomEx(){
   const name=document.getElementById('custom-ex-name').value.trim();
   if(!name){ toast('Enter a name'); return; }
+  const tf=customTypeFields();
   if(pickerTarget==='free'){
     addFreeExercise({
       name,
       muscle:document.getElementById('custom-ex-muscle').value.trim(),
-      reps:parseInt(document.getElementById('custom-ex-reps').value)||'',
       rest:parseInt(document.getElementById('custom-ex-rest').value)||60,
-      link:document.getElementById('custom-ex-link').value.trim()
+      link:document.getElementById('custom-ex-link').value.trim(),
+      ...tf, reps:tf.reps||''
     });
-    ['custom-ex-name','custom-ex-muscle','custom-ex-sets','custom-ex-reps','custom-ex-rest','custom-ex-link']
-      .forEach(id=>document.getElementById(id).value='');
+    resetCustomForm();
     closeExPicker(); toast(name+' added'); return;
   }
   editingExercises.push({
     name,
     muscle:document.getElementById('custom-ex-muscle').value.trim(),
     sets:parseInt(document.getElementById('custom-ex-sets').value)||3,
-    reps:parseInt(document.getElementById('custom-ex-reps').value)||12,
     rest:parseInt(document.getElementById('custom-ex-rest').value)||60,
-    link:document.getElementById('custom-ex-link').value.trim()
+    link:document.getElementById('custom-ex-link').value.trim(),
+    ...tf, reps:tf.type==='time'?0:(tf.reps||12)
   });
-  ['custom-ex-name','custom-ex-muscle','custom-ex-sets','custom-ex-reps','custom-ex-rest','custom-ex-link']
-    .forEach(id=>document.getElementById(id).value='');
+  resetCustomForm();
   renderEditExList(); closeExPicker(); toast('Exercise added');
 }
 
@@ -1197,15 +1397,26 @@ function renderExCharts(){
   const el=document.getElementById('ex-charts');
   if(!name){ el.innerHTML=''; return; }
   const pts=[];
+  let timed=false;
   D.sessions.slice().reverse().forEach(s=>{
     const ex=s.exercises.find(e=>e.name===name);
     if(!ex) return;
+    const isT=ex.type==='time'||ex.sets.some(st=>(st.secs||0)>0);
+    timed=timed||isT;
     const maxKg=Math.max(...ex.sets.map(st=>st.kg||0));
     const vol=ex.sets.reduce((a,st)=>a+(st.kg||0)*(st.reps||0),0);
-    if(maxKg>0||vol>0) pts.push({date:s.date,maxKg,vol,lbl:new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
+    const maxSecs=Math.max(...ex.sets.map(st=>st.secs||0));
+    const totSecs=ex.sets.reduce((a,st)=>a+(st.secs||0),0);
+    if(maxKg>0||vol>0||maxSecs>0) pts.push({date:s.date,maxKg,vol,maxSecs,totSecs,lbl:new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
   });
   if(!pts.length){ el.innerHTML='<div class="empty">No data for this exercise yet.</div>'; return; }
   if(pts.length===1){ el.innerHTML='<div class="empty">Log at least 2 sessions to see a chart.</div>'; return; }
+  if(timed){
+    // timed sets show duration instead of reps
+    el.innerHTML=lineChart('Longest set','maxSecs','s',pts)+lineChart('Total time','totSecs','s',pts)+
+      (pts.some(p=>p.maxKg>0)?lineChart('Max weight per set','maxKg','kg',pts):'');
+    return;
+  }
   el.innerHTML=lineChart('Max weight per set','maxKg','kg',pts)+lineChart('Total volume (kg × reps)','vol','',pts);
 }
 
@@ -1232,12 +1443,15 @@ function lineChart(title,key,unit,pts){
 // ── Export ─────────────────────────────────────────────────────
 function exportCSV(){
   if(!D.sessions.length){ toast('No sessions yet'); return; }
-  let csv='Date,Day,Exercise,Muscle,Set,Weight (kg),Target reps,Reps done,Done\n';
+  let csv='Date,Day,Exercise,Muscle,Set,Weight (kg),Target,Reps done,Duration (s),Done\n';
   D.sessions.forEach(s=>{
     const d=new Date(s.date).toLocaleDateString('en-GB');
     s.exercises.forEach(ex=>{
+      const isT=ex.type==='time';
       ex.sets.forEach((st,i)=>{
-        csv+=`"${d}","${s.dayName}","${ex.name}","${ex.muscle||''}",${i+1},${st.kg||0},${st.target||''},${st.reps||0},${st.done?'yes':'no'}\n`;
+        // timed sets: target is seconds ("45s"), duration instead of reps
+        const target=st.target?(isT?st.target+'s':st.target):'';
+        csv+=`"${d}","${s.dayName}","${ex.name}","${ex.muscle||''}",${i+1},${st.kg||0},${target},${isT?'':(st.reps||0)},${isT?(st.secs||0):''},${st.done?'yes':'no'}\n`;
       });
     });
   });
@@ -1370,7 +1584,19 @@ function normalizeData(d){
   if(!Array.isArray(d.days)||!d.days.length) d.days=JSON.parse(JSON.stringify(DEFAULT_DAYS));
   if(!Array.isArray(d.sessions)) d.sessions=[];
   if(!Array.isArray(d.bw)) d.bw=[];
+  migrateTimed(d);
   return d;
+}
+
+// One-off: Plank and Dead bug became timed exercises. Saved days that still have them as
+// reps (never switched by hand — no `type` field yet) are updated to the timed version.
+function migrateTimed(d){
+  const timed={};
+  EX_DB.filter(isTimed).forEach(e=>timed[e.name.toLowerCase()]=e);
+  d.days.forEach(day=>(day.exercises||[]).forEach(ex=>{
+    const t=timed[(ex.name||'').toLowerCase()];
+    if(t && !('type' in ex)){ Object.assign(ex, timedFields(t)); ex.reps=0; }
+  }));
 }
 
 function emptyData(){ return normalizeData({}); }
