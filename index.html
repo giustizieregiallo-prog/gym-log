@@ -404,7 +404,7 @@ function show(id){
   document.getElementById(id).classList.add('active');
   document.getElementById(id).scrollTop=0;
 }
-function goHome(){ stopTimer(); renderHome(); show('screen-home'); }
+function goHome(){ saveDraft(); stopTimer(); renderHome(); show('screen-home'); }
 function goStats(){ renderStats(); show('screen-stats'); }
 
 // ── Home ───────────────────────────────────────────────────────
@@ -452,6 +452,11 @@ function startWorkout(id){
   if(!activeDay) return;
   document.getElementById('workout-title').textContent=activeDay.name;
   renderWorkoutBody();
+  const draft=loadDraft();
+  if(draft && draft.dayId===id && draft.state){
+    applyWorkoutState(draft.state);
+    toast('Unsaved workout restored');
+  }
   show('screen-workout');
 }
 
@@ -460,24 +465,26 @@ function fmtRest(s){
   return s>=60 ? Math.floor(s/60)+'m'+(s%60?''+(s%60)+'s':'') : s+'s';
 }
 
-function renderWorkoutBody(){
-  const last=lastSessionForDay(activeDay.id);
-  const el=document.getElementById('workout-body');
-  el.innerHTML=activeDay.exercises.map((ex,ei)=>{
-    const lastEx=last?last.exercises.find(e=>e.name===ex.name):null;
-    const restStr=fmtRest(ex.rest||60);
-    const rows=Array.from({length:ex.sets},(_,si)=>{
-      const ls=lastEx?(lastEx.sets[si]||null):null;
-      const lkg=ls&&ls.kg>0?ls.kg:'';
-      const lrp=ls&&ls.reps>0?ls.reps:'';
-      return `<tr id="row-${ei}-${si}">
+function setRowHTML(ex, ei, si, lastEx){
+  const ls=lastEx?(lastEx.sets[si]||null):null;
+  const lkg=ls&&ls.kg>0?ls.kg:'';
+  const lrp=ls&&ls.reps>0?ls.reps:'';
+  return `<tr id="row-${ei}-${si}">
         <td><span class="set-num">${si+1}</span></td>
         <td><input class="inp-kg" type="number" min="0" step="0.5" placeholder="${lkg||'kg'}" id="w${ei}-${si}"></td>
         <td><span class="target-cell">${ex.reps}</span></td>
         <td><input class="inp-reps" type="number" min="0" placeholder="${lrp||'—'}" id="r${ei}-${si}" oninput="checkBeat(this,${ex.reps})"></td>
         <td><button class="done-btn" id="db${ei}-${si}" onclick="tapDone(this,${ei},${si},${ex.rest||60},'${ex.name.replace(/'/g,"\\'")}')">✓</button></td>
       </tr>`;
-    }).join('');
+}
+
+function renderWorkoutBody(){
+  const last=lastSessionForDay(activeDay.id);
+  const el=document.getElementById('workout-body');
+  el.innerHTML=activeDay.exercises.map((ex,ei)=>{
+    const lastEx=last?last.exercises.find(e=>e.name===ex.name):null;
+    const restStr=fmtRest(ex.rest||60);
+    const rows=Array.from({length:ex.sets},(_,si)=>setRowHTML(ex,ei,si,lastEx)).join('');
 
     const lk=ex.link?`<a class="ex-link" href="${ex.link}" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -503,7 +510,7 @@ function renderWorkoutBody(){
       </div>
       <table class="sets-table">
         <thead><tr><th>Set</th><th>kg</th><th>Target</th><th>Done</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody id="tb-${ei}">${rows}</tbody>
       </table>
       ${hint}
       <div class="ex-foot"><button class="add-set-btn" onclick="addSet(${ei})">+ Add set</button></div>
@@ -532,10 +539,71 @@ function checkBeat(inp,target){
   inp.classList.toggle('beat',parseInt(inp.value)>=target);
 }
 
+// Append one row to this exercise's table only; existing rows (and typed values) are untouched.
 function addSet(ei){
-  activeDay.exercises[ei].sets++;
-  save(); renderWorkoutBody();
+  const ex=activeDay.exercises[ei];
+  const si=ex.sets;
+  ex.sets++;
+  save();
+  const last=lastSessionForDay(activeDay.id);
+  const lastEx=last?last.exercises.find(e=>e.name===ex.name):null;
+  const tb=document.getElementById(`tb-${ei}`);
+  if(tb) tb.insertAdjacentHTML('beforeend', setRowHTML(ex,ei,si,lastEx));
 }
+
+// ── Input state (kg / reps / done), keyed by exercise name ─────
+function collectWorkoutState(){
+  const state={};
+  activeDay.exercises.forEach((ex,ei)=>{
+    state[ex.name]=Array.from({length:ex.sets},(_,si)=>({
+      kg:document.getElementById(`w${ei}-${si}`)?.value||'',
+      reps:document.getElementById(`r${ei}-${si}`)?.value||'',
+      done:document.getElementById(`db${ei}-${si}`)?.classList.contains('on')||false
+    }));
+  });
+  return state;
+}
+
+function applyWorkoutState(state){
+  activeDay.exercises.forEach((ex,ei)=>{
+    (state[ex.name]||[]).forEach((s,si)=>{
+      const w=document.getElementById(`w${ei}-${si}`);
+      const r=document.getElementById(`r${ei}-${si}`);
+      const b=document.getElementById(`db${ei}-${si}`);
+      if(w) w.value=s.kg;
+      if(r){ r.value=s.reps; checkBeat(r,ex.reps); }
+      if(b) b.classList.toggle('on',!!s.done);
+    });
+  });
+}
+
+// ── Draft (unsaved workout) ────────────────────────────────────
+const DRAFT_KEY='gl5_draft';
+
+function loadDraft(){
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); } catch(e) { return null; }
+}
+
+function clearDraft(){
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+function saveDraft(){
+  if(!activeDay || !document.getElementById('screen-workout').classList.contains('active')) return;
+  const state=collectWorkoutState();
+  const hasData=Object.values(state).some(sets=>sets.some(s=>s.kg!==''||s.reps!==''||s.done));
+  if(hasData){
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({dayId:activeDay.id,savedAt:new Date().toISOString(),state})); } catch(e) {}
+  } else {
+    // nothing typed: drop this day's old draft, but keep another day's draft
+    const d=loadDraft();
+    if(d && d.dayId===activeDay.id) clearDraft();
+  }
+}
+
+// also keep the draft if the phone backgrounds or closes the tab mid-workout
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveDraft(); });
+window.addEventListener('pagehide',saveDraft);
 
 function saveWorkout(){
   if(!activeDay) return;
@@ -553,7 +621,8 @@ function saveWorkout(){
     }))
   };
   D.sessions.unshift(session);
-  save(); stopTimer(); toast('Workout saved ✓'); goHome();
+  save(); clearDraft(); activeDay=null;
+  stopTimer(); toast('Workout saved ✓'); goHome();
 }
 
 // ── Edit day ───────────────────────────────────────────────────
