@@ -318,7 +318,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="rest-clock" id="rest-clock">0:00</div>
       <div class="rest-label" id="rest-label">Rest</div>
     </div>
-    <button class="rest-stop-btn" onclick="stopTimer()">Skip</button>
+    <button class="rest-stop-btn" onclick="skipRest()">Skip</button>
   </div>
 
   <div class="workout-pad" id="workout-body"></div>
@@ -521,6 +521,7 @@ function updateTimerDisplay(){
     ring.style.strokeDashoffset=0;
     // vibrate if supported
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    startQueuedTimed();   // rest after a timed set → next set's countdown starts by itself
     clearInterval(timerInterval); timerInterval=null;
   } else {
     const m=Math.floor(remaining/60), s=remaining%60;
@@ -551,7 +552,7 @@ function show(id){
   screen.classList.add('active');
   document.getElementById(id).scrollTop=0;
 }
-function goHome(){ stopAllCountdowns(); saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
+function goHome(){ nextTimed=null; stopAllCountdowns(); saveDraft(); stopTimer(); releaseWakeLock(); renderHome(); show('screen-home'); }
 
 // ── Wake lock (keep screen on during a workout) ────────────────
 let wakeLock=null;
@@ -675,7 +676,7 @@ function tapCountdown(btn, restSecs, exName){
   if(c){ finishCountdown(btn, false); return; }          // tap while running = stop early
   const dur=countdownDur(btn);
   if(!dur){ toast('Set a duration first'); return; }
-  stopTimer();
+  stopTimer(); nextTimed=null;
   const end=Date.now()+dur*1000;
   btn.classList.add('running'); btn.classList.remove('logged');
   const tick=()=>{
@@ -699,7 +700,7 @@ function finishCountdown(btn, completed, restSecs, exName){
     if(navigator.vibrate) navigator.vibrate([300,100,300]);
     const db=document.getElementById(btn.dataset.done);
     if(db && !db.classList.contains('on')) tapDone(db,0,0,restSecs,exName);
-    else { const row=btn.closest('tr'); if(row){ row.classList.remove('set-done-flash'); void row.offsetWidth; row.classList.add('set-done-flash'); } startTimer(restSecs,exName); }
+    else { const row=btn.closest('tr'); if(row){ row.classList.remove('set-done-flash'); void row.offsetWidth; row.classList.add('set-done-flash'); } queueNextTimed(row); startTimer(restSecs,exName); }
   }
 }
 
@@ -782,9 +783,35 @@ function renderWorkoutBody(){
   }).join('');
 }
 
+// ── Auto-start the next timed set when the rest ends ──────────
+// Set when a timed set is finished (countdown or ✓); cleared by anything else.
+let nextTimed=null;   // {rowId} of the set that just finished
+
+function queueNextTimed(row){
+  nextTimed = row && row.querySelector('.time-btn') ? {rowId:row.id} : null;
+}
+
+function startQueuedTimed(){
+  const q=nextTimed; nextTimed=null;
+  if(!q || !onWorkoutScreen()) return;
+  const row=document.getElementById(q.rowId); if(!row) return;
+  let next=row.nextElementSibling;
+  // next set of the same exercise that hasn't been done yet (looked up now, so a set added
+  // with "+ Add set" during the rest counts). No next set = last one, nothing starts.
+  while(next && (parseInt(next.querySelector('.time-btn')?.value)>0 || next.querySelector('.done-btn.on'))) next=next.nextElementSibling;
+  if(!next) return;
+  const b=next.querySelector('.time-btn');
+  if(!b || countdowns[b.id]) return;
+  b.click();
+  b.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function skipRest(){ stopTimer(); startQueuedTimed(); }
+
 function tapDone(btn, ei, si, restSecs, exName){
   const wasOn=btn.classList.contains('on');
   btn.classList.toggle('on');
+  queueNextTimed(wasOn?null:btn.closest('tr'));
   if(!wasOn){
     // flash the row
     const row=btn.closest('tr');
