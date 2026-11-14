@@ -203,6 +203,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .profile-status{font-size:13px;color:var(--text3);margin-bottom:12px}
 .key-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
 .key-card .name-input{margin-bottom:8px}
+.pin-label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
+.pin-input{letter-spacing:.5em;text-align:center}
+.pin-big{font-size:28px;max-width:200px;display:block;margin:0 auto 10px}
+.pin-pad{text-align:center;padding-top:40px}
+.pin-pad .save-day-btn{max-width:320px}
+.pin-for{font-size:15px;color:var(--text2);margin-bottom:18px}
+.pin-error{color:#c0392b;font-size:13px;min-height:20px;margin-bottom:8px}
+.pin-modal-body{border-top:none}
 .key-link{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0}
 </style>
 </head>
@@ -227,13 +235,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="section-label" style="margin-top:18px">New profile</div>
     <p class="profile-note">If you have existing data on this device, create a new profile to upload it.</p>
     <input class="name-input" id="new-profile-name" type="text" maxlength="40" placeholder="Your name">
+    <label class="pin-label" for="new-profile-pin">PIN — optional, leave blank for no protection</label>
+    <input class="name-input pin-input" id="new-profile-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
     <button class="save-day-btn" onclick="createProfile()">Create new profile</button>
+  </div>
+</div>
+
+<!-- PIN ENTRY -->
+<div class="screen" id="screen-pin">
+  <div class="topbar">
+    <button class="back-btn" onclick="cancelPin()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Profiles</button>
+    <h1>Enter PIN</h1>
+  </div>
+  <div class="profile-pad pin-pad">
+    <div class="pin-for">PIN for <strong id="pin-profile"></strong></div>
+    <input class="name-input pin-input pin-big" id="pin-entry" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••"
+      oninput="if(this.value.length===4) submitPin()" onkeydown="if(event.key==='Enter') submitPin()">
+    <div class="pin-error" id="pin-error"></div>
+    <button class="save-day-btn" onclick="submitPin()">Unlock</button>
   </div>
 </div>
 
 <!-- HOME -->
 <div class="screen active" id="screen-home">
-  <div class="topbar"><h1 id="home-title">My training</h1><button class="switch-profile-btn" onclick="switchProfile()">Switch profile</button></div>
+  <div class="topbar"><h1 id="home-title">My training</h1><button class="switch-profile-btn" onclick="openPinModal()">PIN</button><button class="switch-profile-btn" onclick="switchProfile()">Switch profile</button></div>
   <div class="home-pad">
     <div class="bw-card">
       <div class="bw-card-title">Body weight</div>
@@ -339,6 +364,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <input id="custom-ex-link" placeholder="YouTube link (optional)">
       <button class="btn-add-custom" onclick="addCustomEx()">Add custom exercise</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="overlay" id="overlay-pin" onclick="if(event.target===this) closePinModal()">
+  <div class="modal">
+    <div class="modal-head"><h2 id="pin-modal-title">Set a PIN</h2><button class="modal-close" onclick="closePinModal()">×</button></div>
+    <div class="modal-custom pin-modal-body">
+      <div id="pin-current-wrap">
+        <label class="pin-label" for="pin-current">Current PIN</label>
+        <input class="pin-input" id="pin-current" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+      </div>
+      <label class="pin-label" for="pin-new">New PIN (4 digits)</label>
+      <input class="pin-input" id="pin-new" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+      <label class="pin-label" for="pin-confirm">Confirm new PIN</label>
+      <input class="pin-input" id="pin-confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+      <div class="pin-error" id="pin-modal-error"></div>
+      <button class="btn-add-custom" id="pin-save-btn" onclick="savePinFromModal()">Set PIN</button>
+      <button class="del-day-btn" id="pin-remove-btn" style="margin-top:8px" onclick="removePinFromModal()">Remove PIN</button>
     </div>
   </div>
 </div>
@@ -1283,15 +1328,41 @@ async function ghPutProfile(id, data, sha){
 let backupQueue=Promise.resolve();
 function backup(){
   const id=lsGet(PROFILE_KEY);
-  if(!id || !ghToken()) return backupQueue;
+  if(!id || !ghToken()) return Promise.resolve(false);
   const snapshot=JSON.parse(JSON.stringify(D));
   backupQueue=backupQueue.then(async()=>{
     try {
       const cur=await ghGetProfile(id);
+      // a newer PIN change made on another device must not be overwritten
+      if(cur && mergePin(snapshot, cur.data) && lsGet(PROFILE_KEY)===id){ mergePin(D, cur.data); save(); }
       await ghPutProfile(id, snapshot, cur&&cur.sha);
-    } catch(e) { /* offline or not allowed — the data is still safe in localStorage */ }
+      return true;
+    } catch(e) { return false; /* offline or not allowed — the data is still safe in localStorage */ }
   });
   return backupQueue;
+}
+
+// ── PIN ────────────────────────────────────────────────────────
+// Stored as D.pinHash (SHA-256 of profile name + PIN) and D.pinSetAt in the profile JSON.
+// A 4-digit PIN only keeps people from opening each other's profile in the app;
+// anyone holding the backup key can still read the files on GitHub.
+async function hashPin(id, pin){
+  const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('gym-log:'+id+':'+pin));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function validPin(p){ return /^\d{4}$/.test(p); }
+
+// copy the PIN from `other` into `target` if it was changed more recently; returns true if copied
+function mergePin(target, other){
+  if(!other || (other.pinSetAt||'') <= (target.pinSetAt||'')) return false;
+  target.pinSetAt=other.pinSetAt;
+  if(other.pinHash) target.pinHash=other.pinHash; else delete target.pinHash;
+  return true;
+}
+
+function setPinFields(d, hash){
+  d.pinSetAt=new Date().toISOString();
+  if(hash) d.pinHash=hash; else delete d.pinHash;
 }
 
 function normalizeData(d){
@@ -1378,25 +1449,66 @@ async function selectProfile(id){
     const remoteCount=remote?(remote.data.sessions||[]).length:-1;
     const owner=lsGet(OWNER_KEY);
     // same profile as the data on this device: keep whichever has more sessions
-    if(owner===id && D.sessions.length>=remoteCount){
-      enterProfile(id); if(D.sessions.length>remoteCount) backup(); return;
-    }
+    const keepLocal = owner===id && D.sessions.length>=remoteCount;
     // data from before profiles existed would be replaced — make sure that's intended
-    if(!owner && D.sessions.length>0 && !confirm(
+    if(!keepLocal && !owner && D.sessions.length>0 && !confirm(
       `This device has ${D.sessions.length} workout(s) that are not in any profile yet.\n\n`+
       `Loading "${id}" will replace them. To keep them, press Cancel and create a new profile instead.`)){
       st.textContent=''; return;
     }
-    useData(remote?remote.data:emptyData());
-    enterProfile(id);
+    // the PIN always comes from whichever copy changed it last
+    const pinSource = remote ? remote.data : {};
+    const pinHash = (keepLocal && (D.pinSetAt||'') > (pinSource.pinSetAt||'')) ? D.pinHash : pinSource.pinHash;
+    st.textContent='';
+    const finish=()=>{
+      if(keepLocal){
+        if(remote) mergePin(D, remote.data);
+        save(); enterProfile(id);
+        if(D.sessions.length>remoteCount) backup();
+      } else {
+        useData(remote?remote.data:emptyData());
+        enterProfile(id);
+      }
+      lsSet(PIN_OK_KEY,'true');
+    };
+    if(pinHash) askPin(id, pinHash, finish); else finish();
   } catch(e) {
     st.textContent='Could not load '+id+' — check your connection and try again.';
   }
 }
 
+// ── PIN entry screen (selecting a protected profile) ───────────
+const PIN_OK_KEY='pinVerified';
+let pinPending=null;
+
+function askPin(id, hash, onOk){
+  pinPending={id, hash, onOk};
+  document.getElementById('pin-profile').textContent=id;
+  document.getElementById('pin-entry').value='';
+  document.getElementById('pin-error').textContent='';
+  show('screen-pin');
+  setTimeout(()=>document.getElementById('pin-entry').focus(),50);
+}
+
+async function submitPin(){
+  if(!pinPending) return;
+  const inp=document.getElementById('pin-entry');
+  const err=document.getElementById('pin-error');
+  if(!validPin(inp.value)){ err.textContent='Enter the 4-digit PIN.'; return; }
+  if(await hashPin(pinPending.id, inp.value)!==pinPending.hash){
+    err.textContent='Wrong PIN — try again.'; inp.value=''; inp.focus(); return;
+  }
+  const p=pinPending; pinPending=null;
+  p.onOk();
+}
+
+function cancelPin(){ pinPending=null; showProfileScreen(); }
+
 async function createProfile(){
   const id=profileName(document.getElementById('new-profile-name').value);
   if(!id){ toast('Type a name first'); return; }
+  const pin=document.getElementById('new-profile-pin').value.trim();
+  if(pin && !validPin(pin)){ toast('PIN must be 4 digits, or leave it blank'); return; }
   const owner=lsGet(OWNER_KEY);
   // data on this device from before profiles existed (no owner) is uploaded as this profile;
   // data that belongs to another profile is not copied
@@ -1407,8 +1519,12 @@ async function createProfile(){
       if(await ghGetProfile(id)){ toast('"'+id+'" already exists — pick it from the list'); return; }
     } catch(e) { /* offline: create locally, it uploads on the next save */ }
   }
+  if(pin) setPinFields(data, await hashPin(id,pin));
+  else { delete data.pinHash; delete data.pinSetAt; }
   useData(data);
   enterProfile(id);
+  lsSet(PIN_OK_KEY,'true');
+  document.getElementById('new-profile-pin').value='';
   backup();
   toast('Profile '+id+' created');
 }
@@ -1416,6 +1532,7 @@ async function createProfile(){
 function switchProfile(){
   backup();           // best effort: upload the current profile before leaving it
   lsDel(PROFILE_KEY);
+  lsDel(PIN_OK_KEY);
   clearDraft(); clearFreeDraft();
   freeExercises=[]; document.getElementById('free-body').innerHTML='';
   showProfileScreen();
@@ -1430,12 +1547,61 @@ async function syncOnOpen(){
     if(lsGet(PROFILE_KEY)!==id) return;          // switched profile meanwhile
     const remoteCount=remote?(remote.data.sessions||[]).length:-1;
     if(remoteCount>D.sessions.length){
+      const local={pinHash:D.pinHash, pinSetAt:D.pinSetAt};
       useData(remote.data);
+      if(mergePin(D, local)){ save(); backup(); }   // a PIN change made here offline wins
       if(document.getElementById('screen-home').classList.contains('active')) renderHome();
     } else if(remoteCount<D.sessions.length){
       backup();
+    } else if(remote && (remote.data.pinSetAt||'')!==(D.pinSetAt||'')){
+      if(mergePin(D, remote.data)) save(); else backup();   // only the PIN differs
     }
   } catch(e) { /* offline */ }
+}
+
+// ── PIN modal (home screen) ────────────────────────────────────
+function openPinModal(){
+  const has=!!D.pinHash;
+  document.getElementById('pin-modal-title').textContent=has?'Change or remove PIN':'Set a PIN';
+  document.getElementById('pin-current-wrap').style.display=has?'block':'none';
+  document.getElementById('pin-remove-btn').style.display=has?'block':'none';
+  document.getElementById('pin-save-btn').textContent=has?'Change PIN':'Set PIN';
+  ['pin-current','pin-new','pin-confirm'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('pin-modal-error').textContent='';
+  document.getElementById('overlay-pin').classList.add('open');
+}
+function closePinModal(){ document.getElementById('overlay-pin').classList.remove('open'); }
+
+async function checkCurrentPin(){
+  const id=lsGet(PROFILE_KEY);
+  const cur=document.getElementById('pin-current').value;
+  return validPin(cur) && await hashPin(id,cur)===D.pinHash;
+}
+
+async function pushPinChange(msg){
+  save();
+  closePinModal();
+  const ok=await backup();
+  toast(ok?msg:msg+' (will sync when online)');
+}
+
+async function savePinFromModal(){
+  const err=document.getElementById('pin-modal-error');
+  const id=lsGet(PROFILE_KEY);
+  if(D.pinHash && !(await checkCurrentPin())){ err.textContent='Current PIN is wrong.'; return; }
+  const p1=document.getElementById('pin-new').value, p2=document.getElementById('pin-confirm').value;
+  if(!validPin(p1)){ err.textContent='New PIN must be 4 digits.'; return; }
+  if(p1!==p2){ err.textContent='The two PINs don\'t match.'; return; }
+  const had=!!D.pinHash;
+  setPinFields(D, await hashPin(id,p1));
+  await pushPinChange(had?'PIN changed':'PIN set');
+}
+
+async function removePinFromModal(){
+  const err=document.getElementById('pin-modal-error');
+  if(!(await checkCurrentPin())){ err.textContent='Current PIN is wrong.'; return; }
+  setPinFields(D, null);
+  await pushPinChange('PIN removed');
 }
 
 // ── Start ──────────────────────────────────────────────────────
