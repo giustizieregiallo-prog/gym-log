@@ -177,13 +177,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast{position:fixed;bottom:calc(var(--safe-b)+80px);left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:400}
 .toast.show{opacity:1}
 .empty{text-align:center;color:var(--text2);padding:36px 20px;font-size:14px}
+
+/* profiles */
+.switch-profile-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:6px 0 6px 8px;white-space:nowrap}
+.profile-pad{padding:16px}
+.profile-note{font-size:13px;color:var(--text2);margin-bottom:14px}
+.profile-btn{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
+.profile-btn:active{background:var(--card2)}
+.profile-status{font-size:13px;color:var(--text3);margin-bottom:12px}
+.key-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+.key-card .name-input{margin-bottom:8px}
+.key-link{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0}
 </style>
 </head>
 <body>
 
+<!-- PROFILE SELECTOR -->
+<div class="screen" id="screen-profile">
+  <div class="topbar"><h1>Choose profile</h1></div>
+  <div class="profile-pad">
+    <div class="key-card" id="key-card">
+      <div class="bw-card-title">Backup key</div>
+      <input class="name-input" id="key-input" type="password" autocomplete="off" placeholder="Paste backup key (github_pat_…)">
+      <button class="bw-save-btn" onclick="saveKey()">Save key</button>
+    </div>
+    <div class="key-card" id="key-saved" style="display:none">
+      <span class="profile-status">Backup key saved on this device. </span>
+      <button class="key-link" onclick="changeKey()">Change key</button>
+    </div>
+    <div class="section-label">Profiles</div>
+    <div class="profile-status" id="profile-status"></div>
+    <div id="profile-list"></div>
+    <div class="section-label" style="margin-top:18px">New profile</div>
+    <p class="profile-note">If you have existing data on this device, create a new profile to upload it.</p>
+    <input class="name-input" id="new-profile-name" type="text" maxlength="40" placeholder="Your name">
+    <button class="save-day-btn" onclick="createProfile()">Create new profile</button>
+  </div>
+</div>
+
 <!-- HOME -->
 <div class="screen active" id="screen-home">
-  <div class="topbar"><h1>My training</h1></div>
+  <div class="topbar"><h1 id="home-title">My training</h1><button class="switch-profile-btn" onclick="switchProfile()">Switch profile</button></div>
   <div class="home-pad">
     <div class="bw-card">
       <div class="bw-card-title">Body weight</div>
@@ -439,7 +473,7 @@ function saveBW(){
   const v=parseFloat(document.getElementById('bw-today').value);
   if(!v||v<30||v>250){ toast('Enter a valid weight'); return; }
   D.bw.push({date:new Date().toISOString(),kg:v});
-  save(); renderHome(); toast('Body weight saved ✓');
+  save(); backup(); renderHome(); toast('Body weight saved ✓');
 }
 
 // ── Workout ────────────────────────────────────────────────────
@@ -645,7 +679,7 @@ function saveWorkout(){
     }))
   };
   D.sessions.unshift(session);
-  save(); clearDraft(); activeDay=null;
+  save(); backup(); clearDraft(); activeDay=null;
   stopTimer(); toast('Workout saved ✓'); goHome();
 }
 
@@ -910,7 +944,234 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-renderHome();
+// ── GitHub backup ──────────────────────────────────────────────
+// Backups go to a PRIVATE repo, separate from the public site repo.
+// The token is NOT stored in this file: each device pastes it once on the
+// profile screen and it is kept in that device's localStorage (gl5_token).
+// Use a GitHub fine-grained token with access to the gym-log-data repo ONLY,
+// and only the "Contents: Read and write" permission. Nothing else.
+const GH_REPO = 'giustizieregiallo-prog/gym-log-data';
+const GH_DATA_PATH = 'data/';
+const PROFILE_KEY = 'profileId';
+const OWNER_KEY = 'gl5_owner';   // which profile the local data belongs to
+const TOKEN_KEY = 'gl5_token';
+
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e) {} }
+function lsDel(k){ try { localStorage.removeItem(k); } catch(e) {} }
+
+function ghToken(){ return lsGet(TOKEN_KEY)||''; }
+
+async function ghFetch(path, opts={}){
+  const token=ghToken();
+  if(!token) throw new Error('no-token');
+  return fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, {
+    ...opts,
+    cache:'no-store',
+    headers:{ 'Accept':'application/vnd.github+json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) }
+  });
+}
+
+// UTF-8 safe base64
+function b64encode(str){
+  const bytes=new TextEncoder().encode(str); let bin='';
+  for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000));
+  return btoa(bin);
+}
+function b64decode(b64){
+  const bin=atob(b64.replace(/\s/g,''));
+  return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)));
+}
+
+// returns {sha, data} | null if the file doesn't exist; throws on network/auth errors
+async function ghGetProfile(id){
+  const res=await ghFetch(GH_DATA_PATH+encodeURIComponent(id)+'.json');
+  if(res.status===404) return null;
+  if(!res.ok) throw new Error('github '+res.status);
+  const j=await res.json();
+  return { sha:j.sha, data:JSON.parse(b64decode(j.content)) };
+}
+
+async function ghListProfiles(){
+  const res=await ghFetch(GH_DATA_PATH.replace(/\/$/,''));
+  if(res.status===404) return [];
+  if(!res.ok) throw new Error('github '+res.status);
+  const items=await res.json();
+  return items.filter(f=>f.type==='file'&&f.name.endsWith('.json')).map(f=>f.name.slice(0,-5)).sort((a,b)=>a.localeCompare(b));
+}
+
+async function ghPutProfile(id, data, sha){
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
+  const date=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())} ${p(n.getHours())}:${p(n.getMinutes())}`;
+  const body={ message:`Backup ${id} – ${date}`, content:b64encode(JSON.stringify(data,null,2)) };
+  if(sha) body.sha=sha;
+  const res=await ghFetch(GH_DATA_PATH+encodeURIComponent(id)+'.json',{ method:'PUT', body:JSON.stringify(body) });
+  if(!res.ok) throw new Error('github '+res.status);
+}
+
+// Push full D for the current profile. Silent on any failure (offline, no key…).
+// Pushes are queued so two quick saves don't race on the file SHA.
+let backupQueue=Promise.resolve();
+function backup(){
+  const id=lsGet(PROFILE_KEY);
+  if(!id || !ghToken()) return backupQueue;
+  const snapshot=JSON.parse(JSON.stringify(D));
+  backupQueue=backupQueue.then(async()=>{
+    try {
+      const cur=await ghGetProfile(id);
+      await ghPutProfile(id, snapshot, cur&&cur.sha);
+    } catch(e) { /* offline or not allowed — the data is still safe in localStorage */ }
+  });
+  return backupQueue;
+}
+
+function normalizeData(d){
+  d=d||{};
+  if(!Array.isArray(d.days)||!d.days.length) d.days=JSON.parse(JSON.stringify(DEFAULT_DAYS));
+  if(!Array.isArray(d.sessions)) d.sessions=[];
+  if(!Array.isArray(d.bw)) d.bw=[];
+  return d;
+}
+
+function emptyData(){ return normalizeData({}); }
+
+// Replace the in-memory + local data with another profile's data
+function useData(d){
+  D=normalizeData(d);
+  nextId=Math.max(0, ...D.days.map(x=>x.id||0)) + 1;
+  save();
+}
+
+function profileName(raw){
+  return raw.trim().replace(/\s+/g,'-').replace(/[^\p{L}\p{N}_-]/gu,'').slice(0,40);
+}
+
+function enterProfile(id){
+  lsSet(PROFILE_KEY,id);
+  lsSet(OWNER_KEY,id);
+  goHome();
+}
+
+// ── Profile screen ─────────────────────────────────────────────
+function showProfileScreen(){
+  const has=!!ghToken();
+  document.getElementById('key-card').style.display=has?'none':'block';
+  document.getElementById('key-saved').style.display=has?'block':'none';
+  document.getElementById('new-profile-name').value='';
+  show('screen-profile');
+  loadProfileList();
+}
+
+async function loadProfileList(){
+  const st=document.getElementById('profile-status');
+  const list=document.getElementById('profile-list');
+  list.innerHTML='';
+  if(!ghToken()){ st.textContent='Add the backup key above to see saved profiles.'; return; }
+  st.textContent='Loading…';
+  try {
+    const names=await ghListProfiles();
+    st.textContent=names.length?'':'No profiles yet — create one below.';
+    names.forEach(n=>{
+      const b=document.createElement('button');
+      b.className='profile-btn';
+      b.innerHTML='<div class="day-dot"></div>';
+      b.appendChild(document.createTextNode(n));
+      b.onclick=()=>selectProfile(n);
+      list.appendChild(b);
+    });
+  } catch(e) {
+    st.textContent=e.message==='github 401'||e.message==='github 403'||e.message==='github 404'
+      ? 'The backup key was not accepted. Check it and save it again.'
+      : 'Offline — could not load profiles.';
+  }
+}
+
+function saveKey(){
+  const v=document.getElementById('key-input').value.trim();
+  if(!v){ toast('Paste the backup key first'); return; }
+  lsSet(TOKEN_KEY,v);
+  document.getElementById('key-input').value='';
+  showProfileScreen();
+}
+
+function changeKey(){
+  document.getElementById('key-card').style.display='block';
+  document.getElementById('key-saved').style.display='none';
+}
+
+async function selectProfile(id){
+  const st=document.getElementById('profile-status');
+  st.textContent='Loading '+id+'…';
+  try {
+    const remote=await ghGetProfile(id);
+    const remoteCount=remote?(remote.data.sessions||[]).length:-1;
+    const owner=lsGet(OWNER_KEY);
+    // same profile as the data on this device: keep whichever has more sessions
+    if(owner===id && D.sessions.length>=remoteCount){
+      enterProfile(id); if(D.sessions.length>remoteCount) backup(); return;
+    }
+    // data from before profiles existed would be replaced — make sure that's intended
+    if(!owner && D.sessions.length>0 && !confirm(
+      `This device has ${D.sessions.length} workout(s) that are not in any profile yet.\n\n`+
+      `Loading "${id}" will replace them. To keep them, press Cancel and create a new profile instead.`)){
+      st.textContent=''; return;
+    }
+    useData(remote?remote.data:emptyData());
+    enterProfile(id);
+  } catch(e) {
+    st.textContent='Could not load '+id+' — check your connection and try again.';
+  }
+}
+
+async function createProfile(){
+  const id=profileName(document.getElementById('new-profile-name').value);
+  if(!id){ toast('Type a name first'); return; }
+  const owner=lsGet(OWNER_KEY);
+  // data on this device from before profiles existed (no owner) is uploaded as this profile;
+  // data that belongs to another profile is not copied
+  const data = owner ? emptyData() : normalizeData(D);
+  if(ghToken()){
+    try {
+      if(await ghGetProfile(id)){ toast('"'+id+'" already exists — pick it from the list'); return; }
+    } catch(e) { /* offline: create locally, it uploads on the next save */ }
+  }
+  useData(data);
+  enterProfile(id);
+  backup();
+  toast('Profile '+id+' created');
+}
+
+function switchProfile(){
+  backup();           // best effort: upload the current profile before leaving it
+  lsDel(PROFILE_KEY);
+  clearDraft();
+  showProfileScreen();
+}
+
+// On open with a profile: fetch the backup in the background, keep whichever has more sessions
+async function syncOnOpen(){
+  const id=lsGet(PROFILE_KEY);
+  if(!id || !ghToken()) return;
+  try {
+    const remote=await ghGetProfile(id);
+    if(lsGet(PROFILE_KEY)!==id) return;          // switched profile meanwhile
+    const remoteCount=remote?(remote.data.sessions||[]).length:-1;
+    if(remoteCount>D.sessions.length){
+      useData(remote.data);
+      if(document.getElementById('screen-home').classList.contains('active')) renderHome();
+    } else if(remoteCount<D.sessions.length){
+      backup();
+    }
+  } catch(e) { /* offline */ }
+}
+
+// ── Start ──────────────────────────────────────────────────────
+if(lsGet(PROFILE_KEY)){
+  renderHome();
+  syncOnOpen();
+} else {
+  showProfileScreen();
+}
 </script>
 </body>
 </html>
