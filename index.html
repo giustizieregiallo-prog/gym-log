@@ -1225,7 +1225,11 @@ function lsGet(k){ try { return localStorage.getItem(k); } catch(e) { return nul
 function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e) {} }
 function lsDel(k){ try { localStorage.removeItem(k); } catch(e) {} }
 
-function ghToken(){ return lsGet(TOKEN_KEY)||''; }
+// GitHub keys only contain letters, digits and "_". Copying a key through a chat app
+// can add invisible characters or line breaks, which make the browser refuse the request
+// (it then looks like being offline) — so strip everything else.
+function cleanToken(t){ return String(t||'').replace(/[^A-Za-z0-9_]/g,''); }
+function ghToken(){ return cleanToken(lsGet(TOKEN_KEY)); }
 
 async function ghFetch(path, opts={}){
   const token=ghToken();
@@ -1347,12 +1351,14 @@ async function loadProfileList(){
   } catch(e) {
     st.textContent=e.message==='github 401'||e.message==='github 403'||e.message==='github 404'
       ? 'The backup key was not accepted. Check it and save it again.'
-      : 'Offline — could not load profiles.';
+      : navigator.onLine===false
+        ? 'Offline — could not load profiles.'
+        : 'Could not reach GitHub ('+(e.message||'network error')+'). Try again in a moment.';
   }
 }
 
 function saveKey(){
-  const v=document.getElementById('key-input').value.trim();
+  const v=cleanToken(document.getElementById('key-input').value);
   if(!v){ toast('Paste the backup key first'); return; }
   lsSet(TOKEN_KEY,v);
   document.getElementById('key-input').value='';
@@ -1394,7 +1400,8 @@ async function createProfile(){
   const owner=lsGet(OWNER_KEY);
   // data on this device from before profiles existed (no owner) is uploaded as this profile;
   // data that belongs to another profile is not copied
-  const data = owner ? emptyData() : normalizeData(D);
+  // (re-creating the same name, e.g. after it failed to upload, keeps this device's data)
+  const data = (!owner || owner===id) ? normalizeData(D) : emptyData();
   if(ghToken()){
     try {
       if(await ghGetProfile(id)){ toast('"'+id+'" already exists — pick it from the list'); return; }
