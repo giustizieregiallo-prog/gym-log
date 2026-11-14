@@ -201,6 +201,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dur-wrap{display:flex;align-items:center;gap:2px}
 .dur-unit{font-size:11px;color:var(--text3)}
 
+/* stretching */
+.stretch-badge{display:inline-block;font-size:10px;font-weight:600;color:#6d5bd0;background:rgba(109,91,208,.12);border-radius:10px;padding:1px 7px;margin-left:6px;vertical-align:2px;letter-spacing:.02em}
+@media(prefers-color-scheme:dark){.stretch-badge{color:#b3a6f5;background:rgba(179,166,245,.14)}}
+.custom-tags{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.custom-tags .seg{margin:0}
+.stretch-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer}
+.modal-custom .stretch-check input{width:auto;margin:0}
+.stretch-bar{background:#8f7fe0}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
 /* free training */
 .free-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--card);color:var(--accent);border:1.5px solid var(--accent);font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
 .free-btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
@@ -373,9 +383,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mlbl">Or add a custom exercise</div>
       <input id="custom-ex-name" placeholder="Exercise name">
       <input id="custom-ex-muscle" placeholder="Muscle group">
-      <div class="seg" id="custom-ex-type" data-type="reps" role="group" aria-label="Exercise type">
-        <button class="on" onclick="setCustomType('reps')">Reps</button>
-        <button onclick="setCustomType('time')">Time</button>
+      <div class="custom-tags">
+        <div class="seg" id="custom-ex-type" data-type="reps" role="group" aria-label="Exercise type">
+          <button class="on" onclick="setCustomType('reps')">Reps</button>
+          <button onclick="setCustomType('time')">Time</button>
+        </div>
+        <label class="stretch-check"><input type="checkbox" id="custom-ex-stretch" onchange="onCustomStretch(this)"> Stretch</label>
       </div>
       <div class="modal-custom-row">
         <input id="custom-ex-sets"  type="number" placeholder="Sets" min="1" max="10">
@@ -445,7 +458,30 @@ const EX_DB = [
   {name:"Dead bug",            muscle:"Deep core",            cat:"Core",      link:"https://www.youtube.com/watch?v=4XLEnwUr1d8",sets:3,reps:0,type:"time",duration:30,perSide:true,rest:45},
   {name:"Crunch machine",      muscle:"Abs",                  cat:"Core",      link:"https://www.youtube.com/watch?v=N_8pB-LFTO0",sets:3,reps:15,rest:45},
   {name:"Russian twist",       muscle:"Obliques",             cat:"Core",      link:"https://www.youtube.com/watch?v=wkD8rjkodUI",sets:3,reps:20,rest:45},
+  // Stretching — all timed, tagged stretch:true (counted separately in stats). Links are YouTube searches.
+  ...[
+    ["Standing hamstring stretch","Hamstrings",          30,true ],
+    ["Standing quad stretch",     "Quads",               30,true ],
+    ["Kneeling hip flexor stretch","Hip flexors",        30,true ],
+    ["Figure-four glute stretch", "Glutes",              30,true ],
+    ["Pigeon stretch",            "Glutes, hips",        30,true ],
+    ["Butterfly stretch",         "Inner thighs",        45,false],
+    ["Calf stretch (wall)",       "Calves",              30,true ],
+    ["Seated forward fold",       "Hamstrings, lower back",45,false],
+    ["Child pose",                "Lower back, lats",    45,false],
+    ["Cat-cow",                   "Spine",               45,false],
+    ["Cobra stretch",             "Abs, hip flexors",    30,false],
+    ["Doorway chest stretch",     "Chest, front delts",  30,false],
+    ["Cross-body shoulder stretch","Rear delts",         30,true ],
+    ["Overhead tricep stretch",   "Triceps",             30,true ],
+  ].map(([name,muscle,duration,perSide])=>({
+    name, muscle, cat:"Stretching", stretch:true, type:"time", duration, ...(perSide?{perSide:true}:{}),
+    sets:perSide?2:1, reps:0, rest:10,
+    link:"https://www.youtube.com/results?search_query="+encodeURIComponent(name+" how to")
+  })),
 ];
+const STRETCH_NAMES=new Set(EX_DB.filter(e=>e.stretch).map(e=>e.name.toLowerCase()));
+function isStretch(ex){ return !!ex && (ex.stretch===true || STRETCH_NAMES.has((ex.name||'').toLowerCase())); }
 
 // ── Data ──────────────────────────────────────────────────────
 const DEFAULT_DAYS = [
@@ -760,7 +796,7 @@ function renderWorkoutBody(){
 
     return `<div class="ex-block">
       <div class="ex-head">
-        <div class="ex-name">${ex.name}</div>
+        <div class="ex-name">${ex.name}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
         <div class="ex-muscle">${ex.muscle||''}</div>
         <div class="ex-meta-row">
           ${lk}
@@ -924,7 +960,7 @@ function saveWorkout(){
     id:Date.now(),dayId:activeDay.id,dayName:activeDay.name,date:now,
     exercises:activeDay.exercises.map((ex,ei)=>({
       name:ex.name,muscle:ex.muscle,
-      ...(isTimed(ex)?{type:'time'}:{}),
+      ...(isTimed(ex)?{type:'time'}:{}), ...(isStretch(ex)?{stretch:true}:{}),
       sets:Array.from({length:ex.sets},(_,si)=>{
         const r=document.getElementById(`r${ei}-${si}`), db=document.getElementById(`db${ei}-${si}`);
         const kg=parseFloat(document.getElementById(`w${ei}-${si}`)?.value)||0;
@@ -956,7 +992,7 @@ function collectFreeState(){
     if(!ex) return;
     list.push({
       name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link,
-      type:ex.type, duration:ex.duration, perSide:ex.perSide,
+      type:ex.type, duration:ex.duration, perSide:ex.perSide, stretch:ex.stretch,
       sets:Array.from({length:ex.sets},(_,si)=>({
         kg:document.getElementById(`fw${fi}-${si}`)?.value||'',
         target:document.getElementById(`ft${fi}-${si}`)?.value||'',
@@ -985,7 +1021,7 @@ function restoreFreeDraft(){
   d.exercises.forEach(ex=>{
     const fi=freeExercises.length;
     addFreeExercise({name:ex.name, muscle:ex.muscle, reps:ex.reps, rest:ex.rest, link:ex.link,
-      type:ex.type, duration:ex.duration, perSide:ex.perSide});
+      type:ex.type, duration:ex.duration, perSide:ex.perSide, stretch:ex.stretch});
     for(let si=1; si<(ex.sets||[]).length; si++) addFreeSet(fi);
     (ex.sets||[]).forEach((s,si)=>{
       document.getElementById(`fw${fi}-${si}`).value=s.kg;
@@ -1060,7 +1096,7 @@ function addFreeExercise(ex){
   const hint=last?lastHint(last.ex):'';
   const html=`<div class="ex-block" id="fblock-${fi}">
     <div class="ex-head"><div class="ex-head-row"><div>
-      <div class="ex-name">${esc(ex.name)}</div>
+      <div class="ex-name">${esc(ex.name)}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
       <div class="ex-muscle">${esc(ex.muscle||'')}</div>
       <div class="ex-meta-row">
         ${lk}
@@ -1128,7 +1164,7 @@ function saveFreeWorkout(){
     if(!ex) return;
     exercises.push({
       name:ex.name, muscle:ex.muscle,
-      ...(isTimed(ex)?{type:'time'}:{}),
+      ...(isTimed(ex)?{type:'time'}:{}), ...(isStretch(ex)?{stretch:true}:{}),
       sets:Array.from({length:ex.sets},(_,si)=>{
         const r=document.getElementById(`fr${fi}-${si}`), db=document.getElementById(`fdb${fi}-${si}`);
         const kg=parseFloat(document.getElementById(`fw${fi}-${si}`)?.value)||0;
@@ -1179,7 +1215,7 @@ function renderEditExList(){
   el.innerHTML=editingExercises.map((ex,i)=>`
     <div class="ex-row">
       <div class="ex-row-top">
-        <div class="ex-row-name">${ex.name}</div>
+        <div class="ex-row-name">${ex.name}${isStretch(ex)?' <span class="stretch-badge">Stretch</span>':''}</div>
         <button class="ex-row-del" onclick="removeEditEx(${i})">×</button>
       </div>
       <div class="ex-row-muscle">${ex.muscle||''}</div>
@@ -1274,9 +1310,9 @@ function renderExList(q){
   all.forEach(e=>{ if(!groups[e.cat]) groups[e.cat]=[]; groups[e.cat].push(e); });
   list.innerHTML=Object.entries(groups).map(([cat,exs])=>
     `<div class="modal-group-label">${cat}</div>`+
-    exs.map(e=>`<div class="modal-ex-row" onclick='pickEx(${JSON.stringify(e)})'>
+    exs.map(e=>`<div class="modal-ex-row" onclick="pickEx(EX_DB[${EX_DB.indexOf(e)}])">
       <div class="modal-ex-info">
-        <div class="modal-ex-name">${e.name}</div>
+        <div class="modal-ex-name">${e.name}${e.stretch?' <span class="stretch-badge">Stretch</span>':''}</div>
         <div class="modal-ex-muscle">${e.muscle} · ${e.sets}×${targetLabel(e)} · ${fmtRest(e.rest)} rest</div>
       </div>
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);stroke-width:2.2;fill:none;stroke-linecap:round;flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1294,23 +1330,32 @@ function setCustomType(type){
 
 // type-specific fields of the custom exercise form
 function customTypeFields(){
+  const tag=document.getElementById('custom-ex-stretch').checked?{stretch:true}:{};
   if(document.getElementById('custom-ex-type').dataset.type==='time'){
-    return {type:'time', duration:durFieldSecs('custom-ex-dur')||45, reps:0};
+    return {type:'time', duration:durFieldSecs('custom-ex-dur')||45, reps:0, ...tag};
   }
-  return {reps:parseInt(document.getElementById('custom-ex-reps').value)||0};
+  return {reps:parseInt(document.getElementById('custom-ex-reps').value)||0, ...tag};
 }
+
+// ticking "Stretch" suggests Time (stretches are held), but Reps can still be chosen
+function onCustomStretch(cb){ if(cb.checked) setCustomType('time'); }
 
 function resetCustomForm(){
   ['custom-ex-name','custom-ex-muscle','custom-ex-sets','custom-ex-reps','custom-ex-rest','custom-ex-link','custom-ex-dur']
     .forEach(id=>document.getElementById(id).value='');
   const d=document.getElementById('custom-ex-dur');
   if(d.dataset.unit==='min') toggleDurUnit('custom-ex-dur');
+  document.getElementById('custom-ex-stretch').checked=false;
   setCustomType('reps');
 }
 
 function filterExList(){ renderExList(document.getElementById('ex-search').value.toLowerCase()); }
 
-function timedFields(e){ return isTimed(e)?{type:'time',duration:e.duration||45,...(e.perSide?{perSide:true}:{})}:{}; }
+// type/duration/perSide for timed exercises, plus the stretch tag
+function timedFields(e){
+  return {...(isTimed(e)?{type:'time',duration:e.duration||45,...(e.perSide?{perSide:true}:{})}:{}),
+          ...(e.stretch?{stretch:true}:{})};
+}
 
 function pickEx(e){
   if(pickerTarget==='free'){
@@ -1353,10 +1398,51 @@ document.getElementById('overlay-ex').addEventListener('click',e=>{
 });
 
 // ── Stats ──────────────────────────────────────────────────────
+// A "workout" is a session with at least one non-stretch exercise; a stretch-only session
+// counts only towards stretching.
+function isWorkoutSession(s){ return (s.exercises||[]).some(ex=>!isStretch(ex)); }
+// seconds stretched in a session (logged time; a ticked timed set without a time counts its target)
+function stretchSecs(s){
+  return (s.exercises||[]).filter(isStretch)
+    .reduce((a,ex)=>a+(ex.sets||[]).reduce((b,st)=>b+((st.secs||0)||(st.done&&ex.type==='time'?(st.target||0):0)),0),0);
+}
+function fmtStretch(secs){
+  if(!secs) return '0 min';
+  if(secs<60) return secs+'s';
+  const m=secs/60;
+  return (m<10?Math.round(m*10)/10:Math.round(m))+' min';
+}
+
 function renderStats(){
   const el=document.getElementById('stats-body');
-  const total=D.sessions.length;
-  const thisWeek=D.sessions.filter(s=>(new Date()-new Date(s.date))/864e5<=7).length;
+  // "This week" = calendar week starting Monday
+  const weekStart=new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-((weekStart.getDay()+6)%7));
+  const inWeek=s=>new Date(s.date)>=weekStart;
+  const workouts=D.sessions.filter(isWorkoutSession);
+  const total=workouts.length;
+  const thisWeek=workouts.filter(inWeek).length;
+  const stretchAll=D.sessions.reduce((a,s)=>a+stretchSecs(s),0);
+  const weekSessions=D.sessions.filter(inWeek);
+  const stretchWeek=weekSessions.reduce((a,s)=>a+stretchSecs(s),0);
+  const stretchSessWeek=weekSessions.filter(s=>stretchSecs(s)>0).length;
+
+  // stretching minutes per week (last 8 weeks that had stretching)
+  const stretchWeeks={};
+  D.sessions.forEach(s=>{
+    const secs=stretchSecs(s); if(!secs) return;
+    const d=new Date(s.date); const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+    const key=mon.toISOString().slice(0,10);
+    stretchWeeks[key]=(stretchWeeks[key]||0)+secs;
+  });
+  const sw=Object.entries(stretchWeeks).sort((a,b)=>a[0]<b[0]?-1:1).slice(-8);
+  const maxSw=Math.max(...sw.map(x=>x[1]),1);
+  const stretchChart=sw.length?`<div class="section-sep">Stretching</div>
+    <div class="chart-card"><div class="chart-title">Time stretched per week</div><div class="freq-bars" style="height:100px">${sw.map(([k,v])=>`
+      <div class="freq-bar-wrap">
+        <div class="freq-lbl">${fmtStretch(v)}</div>
+        <div class="freq-bar stretch-bar" style="height:${Math.round((v/maxSw)*60)+4}px"></div>
+        <div class="freq-lbl">${new Date(k).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+      </div>`).join('')}</div></div>`:'';
 
   const weekCounts={};
   D.sessions.forEach(s=>{
@@ -1414,11 +1500,14 @@ function renderStats(){
 
   el.innerHTML=`
     <div class="stat-grid">
-      <div class="stat-tile"><div class="stat-lbl">Total sessions</div><div class="stat-val">${total}</div></div>
-      <div class="stat-tile"><div class="stat-lbl">This week</div><div class="stat-val">${thisWeek}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">Workouts this week</div><div class="stat-val">${thisWeek}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">Workouts total</div><div class="stat-val">${total}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">Stretching this week</div><div class="stat-val">${fmtStretch(stretchWeek)}</div><div class="stat-sub">${stretchSessWeek} session${stretchSessWeek!==1?'s':''}</div></div>
+      <div class="stat-tile"><div class="stat-lbl">Stretching total</div><div class="stat-val">${fmtStretch(stretchAll)}</div></div>
     </div>
     <div class="section-sep">Training frequency</div>
     ${weeks.length?`<div class="chart-card"><div class="chart-title">Sessions per week</div><div class="freq-bars">${freqBars}</div></div>`:'<div class="empty" style="padding:12px">Log workouts to see frequency.</div>'}
+    ${stretchChart}
     ${bwChart}
     ${pickerSection}
     <div style="margin-top:16px">
@@ -1477,7 +1566,7 @@ function lineChart(title,key,unit,pts){
 // ── Export ─────────────────────────────────────────────────────
 function exportCSV(){
   if(!D.sessions.length){ toast('No sessions yet'); return; }
-  let csv='Date,Day,Exercise,Muscle,Set,Weight (kg),Target,Reps done,Duration (s),Done\n';
+  let csv='Date,Day,Exercise,Muscle,Stretch,Set,Weight (kg),Target,Reps done,Duration (s),Done\n';
   D.sessions.forEach(s=>{
     const d=new Date(s.date).toLocaleDateString('en-GB');
     s.exercises.forEach(ex=>{
@@ -1485,7 +1574,7 @@ function exportCSV(){
       ex.sets.forEach((st,i)=>{
         // timed sets: target is seconds ("45s"), duration instead of reps
         const target=st.target?(isT?st.target+'s':st.target):'';
-        csv+=`"${d}","${s.dayName}","${ex.name}","${ex.muscle||''}",${i+1},${st.kg||0},${target},${isT?'':(st.reps||0)},${isT?(st.secs||0):''},${st.done?'yes':'no'}\n`;
+        csv+=`"${d}","${s.dayName}","${ex.name}","${ex.muscle||''}",${isStretch(ex)?'yes':'no'},${i+1},${st.kg||0},${target},${isT?'':(st.reps||0)},${isT?(st.secs||0):''},${st.done?'yes':'no'}\n`;
       });
     });
   });
